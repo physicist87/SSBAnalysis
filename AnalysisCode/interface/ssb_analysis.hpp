@@ -29,7 +29,8 @@
 #include "./../interface/BTagCalibrationStandalone.h"
 #include "./../interface/LumiReWeighting.h"
 
-#include "./../roccor.2016.v3/RoccoR.h"
+//#include "./../RoccoR/RoccoR.h"
+#include "./../RoccoR/RoccoR.h"
 
 #include "./../KinSolv/analysisUtils.h"
 #include "./../KinSolv/KinematicReconstruction.h"
@@ -922,81 +923,6 @@ class ssb_analysis : public SSBTree
       TH1D *h_CPO3_PhiVariDown_Minus_Plus;
       TH1D *h_PileUpCheck;
 
-      /// Systematic study with 
-      // Cut Flow
-      TH1D *h_cf_sys_NLeptons[60][10];
-      TH1D *h_cf_sys_Lep1pt[60][10];
-      TH1D *h_cf_sys_Lep1eta[60][10];
-      TH1D *h_cf_sys_Lep1phi[60][10];
-      TH1D *h_cf_sys_Lep2pt[60][10];
-      TH1D *h_cf_sys_Lep2eta[60][10];
-      TH1D *h_cf_sys_Lep2phi[60][10];
-      TH1D *h_cf_sys_dilep_inv_mass[60][10];
-      TH1D *h_cf_sys_Jet1pt[60][10];
-      TH1D *h_cf_sys_Jet1eta[60][10];
-      TH1D *h_cf_sys_Jet1phi[60][10];
-      TH1D *h_cf_sys_Jet2pt[60][10];
-      TH1D *h_cf_sys_Jet2eta[60][10];
-      TH1D *h_cf_sys_Jet2phi[60][10];
-      TH1D *h_cf_sys_NJets[60][10];
-      TH1D *h_cf_sys_metpt[60][10];
-      TH1D *h_cf_sys_metphi[60][10];
-      TH1D *h_cf_sys_Nbjets[60][10];
-      TH1D *h_cf_sys_NPV[60][10];
-
-      TH1D *h_sys_Lep1pt[60][10];
-      TH1D *h_sys_Lep2pt[60][10];
-      TH1D *h_sys_Lep1eta[60][10];
-      TH1D *h_sys_Lep2eta[60][10];
-      TH1D *h_sys_Lep1phi[60][10];
-      TH1D *h_sys_Lep2phi[60][10];
-      TH1D *h_sys_Jet1pt[60][10];
-      TH1D *h_sys_Jet2pt[60][10];
-      TH1D *h_sys_Jet1eta[60][10];
-      TH1D *h_sys_Jet2eta[60][10];
-      TH1D *h_sys_Jet1phi[60][10];
-      TH1D *h_sys_Jet2phi[60][10];
-      TH1D *h_sys_HT[60][10]; 
-      TH1D *h_sys_METpt[60][10]; 
-      TH1D *h_sys_METphi[60][10]; 
-      TH1D *h_sys_DiLepMass[60][10]; 
-      TH1D *h_sys_Num_PV[60][10];
-      TH1D *h_sys_Num_Jets[60][10];
-      TH1D *h_sys_Num_bJets[60][10];
-      TH1D *h_sys_Muonpt[60][10];
-      TH1D *h_sys_Elecpt[60][10];
-      TH1D *h_sys_Muoneta[60][10];
-      TH1D *h_sys_Eleceta[60][10];
-      TH1D *h_sys_Muonphi[60][10];
-      TH1D *h_sys_Elecphi[60][10];
-
-      TH1D *h_sys_Top1Mass_[60]; 
-      TH1D *h_sys_Top1pt_[60]; 
-      TH1D *h_sys_Top1Rapidity_[60]; 
-      TH1D *h_sys_Top1phi_[60]; 
-      TH1D *h_sys_Top1Energy_[60]; 
-
-      TH1D *h_sys_Top2Mass_[60]; 
-      TH1D *h_sys_Top2pt_[60]; 
-      TH1D *h_sys_Top2Rapidity_[60]; 
-      TH1D *h_sys_Top2phi_[60]; 
-      TH1D *h_sys_Top2Energy_[60]; 
-
-      TH1D *h_sys_TopMass_[60]; 
-      TH1D *h_sys_Toppt_[60]; 
-      TH1D *h_sys_TopRapidity_[60]; 
-      TH1D *h_sys_Topphi_[60]; 
-      TH1D *h_sys_TopEnergy_[60]; 
-
-      TH1D *h_sys_AnTopMass_[60];
-      TH1D *h_sys_AnToppt_[60]; 
-      TH1D *h_sys_AnTopRapidity_[60]; 
-      TH1D *h_sys_AnTopphi_[60]; 
-      TH1D *h_sys_AnTopEnergy_[60]; 
-
-      TH1D *h_sys_Reco_CPO_[60][13];
-      TH1D *h_sys_Reco_CPO_ReRange_[60][13];
-
       TH1D *h_bTagWeight; 
 };
 #endif
@@ -1040,15 +966,24 @@ ssb_analysis::ssb_analysis(TTree *tree)
    {
       Lumi = total_lumi; // To cover all Run period //
    }
-   else if ( RunPeriod.Contains("BCDEF") || RunPeriod.Contains("bcedf") )
+   else if ( RunPeriod.Contains("APV") || RunPeriod.Contains("PreVFP") )
    {
       Lumi = SSBConfReader->GetNumber( "Luminosities",1 ) ; // To cover all Run period //
    }  
-   else if ( RunPeriod.Contains("GH") || RunPeriod.Contains("gh") )
+   else if ( RunPeriod.Contains("NonAPV") || RunPeriod.Contains("PostVFP") )
    {
       Lumi = SSBConfReader->GetNumber( "Luminosities",2 ) ; // To cover all Run period //
    }
+   else if ( RunPeriod.Contains("2017") )
+   {
+      Lumi = SSBConfReader->GetNumber( "Luminosities",3 ) ; // To cover all Run period //
+   }
+   else if ( RunPeriod.Contains("2018") )
+   {
+      Lumi = SSBConfReader->GetNumber( "Luminosities",4 ) ; // To cover all Run period //
+   }
    else {
+      cout << "Check out RunPeriod !!!" << endl;
    // To cover all Run period // No Select Lumi, So default is Luminosity vale in the config //
    }
 
@@ -1307,7 +1242,7 @@ ssb_analysis::ssb_analysis(TTree *tree)
    cout << "JetPtPhiDil : " << JetPtPhiDil << endl;
    //ReadDupleList();
    /// Get Info of Muon Correction ///
-   ssbmucor = new RoccoR("./roccor.2016.v3/rcdata.2016.v3");
+   ssbmucor = new RoccoR("./RoccoR/RoccoR2016aUL.txt");
 }
 
 ssb_analysis::~ssb_analysis()

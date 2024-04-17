@@ -182,8 +182,8 @@ void ssb_analysis::GetVariables()
    /// *** Jet condition *** ///
    /////////////////////////////
 
-   if      ( TString(jetId).Contains( "PFLoose" ) ) { v_jet_Id = Jet_PFId; jet_id = 1; }
-   else if ( TString(jetId).Contains( "PFTight" ) ) { v_jet_Id = Jet_PFId; jet_id = 2; }
+   if      ( TString(jetId).Contains( "PFLoose" ) ) { v_jet_Id = Jet_PFId; jet_id = 1; }// There is no loose id UL
+   else if ( TString(jetId).Contains( "PFTight" ) ) { v_jet_Id = Jet_PFId; jet_id = 1; }// There is no loose id UL
    else {cout << "Jet condition error" << endl;}
 
    if      ( TString(jetbtag).Contains( "CSVL"  ) )    { bdisccut = 0.244; }
@@ -195,6 +195,12 @@ void ssb_analysis::GetVariables()
    else if ( TString(jetbtag).Contains( "pfCSVV2L" ) ) { bdisccut = 0.5426; }
    else if ( TString(jetbtag).Contains( "pfCSVV2M" ) ) { bdisccut = 0.8484; }
    else if ( TString(jetbtag).Contains( "pfCSVV2T" ) ) { bdisccut = 0.9535; }
+   else if ( TString(jetbtag).Contains( "deepCSVL" ) ) { bdisccut = 0.2027; }
+   else if ( TString(jetbtag).Contains( "deepCSVM" ) ) { bdisccut = 0.6001; }
+   else if ( TString(jetbtag).Contains( "deepCSVT" ) ) { bdisccut = 0.8819; }
+   else if ( TString(jetbtag).Contains( "deepJetL" ) ) { bdisccut = 0.0508; }
+   else if ( TString(jetbtag).Contains( "deepJetM" ) ) { bdisccut = 0.2598; }
+   else if ( TString(jetbtag).Contains( "deepJetT" ) ) { bdisccut = 0.6502; }
    else { cout << "bscriminator error !!" << endl; }
    //////////////////////////
    // *** JetCleanning ***///
@@ -332,7 +338,7 @@ void ssb_analysis::Loop( char *logfile )
    /// Check Total Event
    cout << "Ntuple Total Event Check !! " << NtupletotalEvent << endl;
 
-   MCSF();
+   //MCSF();
    cout << "MC_SF Check !! " << mc_sf_ << endl;
 
    Np_eventw_2 = 0.0;
@@ -365,7 +371,7 @@ void ssb_analysis::Loop( char *logfile )
       ////////////////////////////////////////
 
       // Make TL to use SSBTree //
-      MakeVecforTL();
+      //MakeVecforTL();
 
       // initailizing TLorentzVector
       TLVInitial();
@@ -373,97 +379,56 @@ void ssb_analysis::Loop( char *logfile )
       evt_weight_ = 1;
 
       GetVariables();
-      // Apply MC Scale Factor //
-      MCSFApply();
-      // Apply GenWeight //
-      GenWeightApply();
-      // Apply Fact & Reno //
-      FactRenoApply();
-      // Apply PileUpReWeight
-      PDFWeightApply();
-      FragmentApply();
-      DecayTableApply();
-      PileUpReWeightApply();
-      L1PreFireApply();
-      int Info_RunNumber_ =Info_RunNumber;
-      int Info_Luminosity_ =Info_Luminosity;
-      int Info_EventNumber_ =Info_EventNumber;
-      TopPtReweightApply(); /// Apply Top pT Reweight ///
-      ////////////////////////////////////////
-      /// ** Di-Lepton Channel Analysis ** ///
-      ////////////////////////////////////////
-    
+      //////////////////////
+
+      ///////////////////////////////////
+      /// ** Lepton + Jet Analysis ** ///
+      ///////////////////////////////////
       if ( TString(Decaymode).Contains( "dielec" ) ||
            TString(Decaymode).Contains( "dimuon" ) || 
-           TString(Decaymode).Contains( "muel" )     )
-      {
-      
-         /////////////////////////////////////////////
-         /// Finding Di-Lep. Channel at Gen.Level. ///
-         /////////////////////////////////////////////
+           TString(Decaymode).Contains( "muel" )     ){
 
-         if ( ChannelIndex() == false) {continue;}
-         //cout << "L1_PreFire_Central : " << L1_PreFire_Central << endl;
-         //cout << "L1_PreFire_Up : " << L1_PreFire_Up << endl;
-         //cout << "L1_PreFire_Down : " << L1_PreFire_Down << endl;
-         // Num. primary vertex counter
-         NumPVCount();
-         // Lepton Define //
+         /// Strat !///
+         NumPVCount(); 
          LeptonSelector();
          LeptonOrder();
-         // Jet Define //
          JetSelector();
-         // Met Define //
          METDefiner();
          BDsicApply();
-         BJetDefiner(); 
-
-         /// To check up the vertex distribution before pre-selection ///
+         BJetDefiner();
          FillHisto(h_Num_PV_BeforePreSel, num_pv, evt_weight_);
 
          if (METFilterAPP() == true){
             FillHisto(h_Num_PV_AfterMetFilter, num_pv, evt_weight_);
          }
+
          if (Trigger() == true){
             FillHisto(h_Num_PV_AfterTrigger, num_pv, evt_weight_);
          }
-         ////////////////////
-         /// Event Filter ///
-         ////////////////////
-         if ( METFilterAPP() == false ) {continue;}
-         if ( Filter_PV->at(0) == false ) {continue;}
 
-         //////////////////////////////////
-         /// trigger requirement step 0 ///
-         //////////////////////////////////
+         //////////////////////
+         //// Event Filter ////
+         //////////////////////
+
+         if ( METFilterAPP() == false ) {continue;}
+         //if ( Filter_PV->at(0) == false ) {continue;}
+         ////////////////////////////////
+         /// Step 0 Trigger Selection ///
+         ////////////////////////////////
          if ( Trigger() == false ) {continue;}
-         // Apply Trigger SF //
-         if ( FileName_.Contains("Data_Single") )
-         {
-            if ( !RMDuplEvt(Info_RunNumber,Info_Luminosity,Info_EventNumber) ) { continue; }
-         }
+         if ( NumIsoLeptons() == false ){ continue;}
          FillHisto( h_EventWeight[0] , evt_weight_  );
          FillHisto( h_cf_NLeptons[0], Muon_Count, evt_weight_);
          FillHisto( h_cf_NJets[0], v_jet_idx.size(), evt_weight_ );
          FillHisto( h_cf_NPV[0]    , num_pv, evt_weight_ );
          FillHisto( h_Num_PV[0]    , num_pv, evt_weight_ );
-      
-         if ( NumIsoLeptons() == false ){ continue;}
 
-         TriggerSFApply();
-         ///////////////////////
-         /// 3rd Lepton Veto ///
-         ///////////////////////
+
+
          if ( ThirdLeptonVeto() == false ){continue;}
          if (LeptonsPtAddtional() == false ) {continue;}
-         //if (evt_weight_ != 1.){cout << "evt_weight_ : " << evt_weight_ << endl;}
-         // TLorentzVector define
-
-         ////////////////////////////////
-         /// DiLeptonMassCut() step 1 ///
-         ////////////////////////////////
          if ( DiLeptonMassCut() == false ) {continue;}
-         LeptonSFApply();
+//         LeptonSFApply();
 
          FillHisto( h_EventWeight[1] , evt_weight_  );
          FillHisto( h_cf_NPV[1]    , num_pv        , evt_weight_ );
@@ -476,6 +441,7 @@ void ssb_analysis::Loop( char *logfile )
          FillHisto( h_cf_Lep2phi[1], (*Lep2).Phi() , evt_weight_ );
          FillHisto( h_cf_dilep_inv_mass[1], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
          FillHisto( h_cf_NJets[1]  , v_jet_idx.size(), evt_weight_ );
+
          if(v_jet_idx.size() > 0 )
          {
             FillHisto( h_cf_Jet1pt[1] , (*Jet1).Pt()  , evt_weight_ );
@@ -489,11 +455,6 @@ void ssb_analysis::Loop( char *logfile )
             }
          }
 
-/*         cout << " Info_EventNumber : " << Info_EventNumber << " step 1 evt_weight_ : " <<  v_SystEvt[1] 
-         << " Lep1 Pt : " << Lep1->Pt() 
-         << " Lep2 Pt : " << Lep2->Pt() 
-         << endl;*/
-
          FillHisto( h_cf_metpt[1] ,Met->Pt()  , evt_weight_ );
          FillHisto( h_cf_metphi[1],Met->Phi() , evt_weight_ );
          FillHisto( h_DiLepMass[1], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
@@ -506,6 +467,8 @@ void ssb_analysis::Loop( char *logfile )
          FillHisto( h_Lep2phi[1], (*Lep2).Phi() , evt_weight_ );
          FillHisto( h_METpt[1]   , Met->Pt()  , evt_weight_ );
          FillHisto( h_METphi[1]  , Met->Phi()  , evt_weight_ );
+         FillHisto( h_Num_Jets[1]  , v_jet_idx.size(), evt_weight_ );
+         FillHisto( h_Num_bJets[1], nbtagged, evt_weight_ );
          if(v_jet_idx.size() > 0 )
          {
             FillHisto( h_Jet1pt[1] , (*Jet1).Pt()  , evt_weight_ );
@@ -518,58 +481,11 @@ void ssb_analysis::Loop( char *logfile )
                FillHisto( h_Jet2phi[1], (*Jet2).Phi() , evt_weight_ );
             }
          }
-         if (isAllSyst == true){
-            for ( int i = 0; i < v_SystFullName.size(); ++i )
-            {  
-               FillHisto( h_cf_sys_NLeptons[i][1], v_lepton_idx.size(), v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep1pt[i][1] , (*Lep1).Pt()  , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep1eta[i][1], (*Lep1).Eta() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep1phi[i][1], (*Lep1).Phi() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep2pt[i][1] , (*Lep2).Pt()  , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep2eta[i][1], (*Lep2).Eta() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep2phi[i][1], (*Lep2).Phi() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_NPV[i][1]    , num_pv        , v_SystEvt[i] );
-               FillHisto( h_cf_sys_NJets[i][1]  , v_jet_idx.size(), v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet1pt[i][1] , (*Jet1).Pt()  , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet1eta[i][1], (*Jet1).Eta() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet1phi[i][1], (*Jet1).Phi() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet2pt[i][1] , (*Jet2).Pt()  , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet2eta[i][1], (*Jet2).Eta() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet2phi[i][1], (*Jet2).Phi() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_metpt[i][1] ,Met->Pt()  , v_SystEvt[i] );
-               FillHisto( h_cf_sys_metphi[i][1],Met->Phi() , v_SystEvt[i] );
-               
-               FillHisto( h_cf_sys_dilep_inv_mass[i][1], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-               FillHisto( h_cf_sys_metpt[i][1] , Met->Pt() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_metphi[i][1], Met->Phi(), v_SystEvt[i] );
-               
-               FillHisto( h_sys_Num_PV[i][1], num_pv, v_SystEvt[i] );
-               FillHisto( h_sys_DiLepMass[i][1], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-               FillHisto( h_sys_Lep1pt[i][1] , (*Lep1).Pt()  , v_SystEvt[i] );
-               FillHisto( h_sys_Lep1eta[i][1], (*Lep1).Eta() , v_SystEvt[i] );
-               FillHisto( h_sys_Lep1phi[i][1], (*Lep1).Phi() , v_SystEvt[i] );
-               FillHisto( h_sys_Lep2pt[i][1] , (*Lep2).Pt()  , v_SystEvt[i] );
-               FillHisto( h_sys_Lep2eta[i][1], (*Lep2).Eta() , v_SystEvt[i] );
-               FillHisto( h_sys_Lep2phi[i][1], (*Lep2).Phi() , v_SystEvt[i] );
-               FillHisto( h_sys_Jet1pt[i][1] , (*Jet1).Pt()  , v_SystEvt[i] );
-               FillHisto( h_sys_Jet1eta[i][1], (*Jet1).Eta() , v_SystEvt[i] );
-               FillHisto( h_sys_Jet1phi[i][1], (*Jet1).Phi() , v_SystEvt[i] );
-               FillHisto( h_sys_Jet2pt[i][1] , (*Jet2).Pt()  , v_SystEvt[i] );
-               FillHisto( h_sys_Jet2eta[i][1], (*Jet2).Eta() , v_SystEvt[i] );
-               FillHisto( h_sys_Jet2phi[i][1], (*Jet2).Phi() , v_SystEvt[i] );
-               FillHisto( h_sys_Num_Jets[i][1], v_jet_idx.size(), v_SystEvt[i] );
-               FillHisto( h_sys_METpt[i][1]   , Met->Pt()  , v_SystEvt[i] );
-               FillHisto( h_sys_METphi[i][1]  , Met->Phi()  , v_SystEvt[i] );
-            }     
-         }
-      
-         // ZVetocut step 2 
+         ///////////////////////
+         /// Z mass Veto Cut ///
+         ///////////////////////
          if ( ZVetoCut() == false ) {continue;}
 
-/*         cout << " Info_EventNumber : " << Info_EventNumber << " step 2 evt_weight_ : " <<  v_SystEvt[1] 
-         << " Lep1 Pt : " << Lep1->Pt() 
-         << " Lep2 Pt : " << Lep2->Pt() 
-         << endl;*/
 
          FillHisto( h_EventWeight[2], evt_weight_  );
          FillHisto( h_cf_NLeptons[2], v_lepton_idx.size(), evt_weight_ );
@@ -606,8 +522,10 @@ void ssb_analysis::Loop( char *logfile )
          FillHisto( h_Lep2eta[2], (*Lep2).Eta() , evt_weight_ );
          FillHisto( h_Lep2phi[2], (*Lep2).Phi() , evt_weight_ );
          FillHisto( h_Num_Jets[2]  , v_jet_idx.size(), evt_weight_ );
+         FillHisto( h_Num_bJets[2], nbtagged, evt_weight_ );
          FillHisto( h_METpt[2]   , Met->Pt()  , evt_weight_ );
          FillHisto( h_METphi[2]  , Met->Phi()  , evt_weight_ );
+
          if(v_jet_idx.size() > 0 )
          {
             FillHisto( h_Jet1pt[2] , (*Jet1).Pt()  , evt_weight_ );
@@ -620,67 +538,9 @@ void ssb_analysis::Loop( char *logfile )
                FillHisto( h_Jet2phi[2], (*Jet2).Phi() , evt_weight_ );
             }
          }
-         //FillHisto( h_cf_met[2], , evt_weight_ );
-         //FillHisto( h_cf_Nbjets[2], , evt_weight_ );
-         if (isAllSyst == true){
-            for ( int i = 0; i < v_SystFullName.size(); ++i )
-            {  
-               FillHisto( h_cf_sys_NLeptons[i][2], v_lepton_idx.size(), v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep1pt[i][2] , (*Lep1).Pt()  , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep1eta[i][2], (*Lep1).Eta() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep1phi[i][2], (*Lep1).Phi() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep2pt[i][2] , (*Lep2).Pt()  , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep2eta[i][2], (*Lep2).Eta() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Lep2phi[i][2], (*Lep2).Phi() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_NPV[i][2]    , num_pv        , v_SystEvt[i] );
-               FillHisto( h_cf_sys_NJets[i][2]  , v_jet_idx.size(), v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet1pt[i][2] , (*Jet1).Pt()  , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet1eta[i][2], (*Jet1).Eta() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet1phi[i][2], (*Jet1).Phi() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet2pt[i][2] , (*Jet2).Pt()  , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet2eta[i][2], (*Jet2).Eta() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_Jet2phi[i][2], (*Jet2).Phi() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_metpt[i][2] ,Met->Pt()  , v_SystEvt[i] );
-               FillHisto( h_cf_sys_metphi[i][2],Met->Phi() , v_SystEvt[i] );
-               
-               FillHisto( h_cf_sys_dilep_inv_mass[i][2], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-               FillHisto( h_cf_sys_metpt[i][2] , Met->Pt() , v_SystEvt[i] );
-               FillHisto( h_cf_sys_metphi[i][2], Met->Phi(), v_SystEvt[i] );
-               
-               FillHisto( h_sys_Num_PV[i][2], num_pv, v_SystEvt[i] );
-               FillHisto( h_sys_DiLepMass[i][2], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-               FillHisto( h_sys_Lep1pt[i][2] , (*Lep1).Pt()  , v_SystEvt[i] );
-               FillHisto( h_sys_Lep1eta[i][2], (*Lep1).Eta() , v_SystEvt[i] );
-               FillHisto( h_sys_Lep1phi[i][2], (*Lep1).Phi() , v_SystEvt[i] );
-               FillHisto( h_sys_Lep2pt[i][2] , (*Lep2).Pt()  , v_SystEvt[i] );
-               FillHisto( h_sys_Lep2eta[i][2], (*Lep2).Eta() , v_SystEvt[i] );
-               FillHisto( h_sys_Lep2phi[i][2], (*Lep2).Phi() , v_SystEvt[i] );
-               FillHisto( h_sys_Jet1pt[i][2] , (*Jet1).Pt()  , v_SystEvt[i] );
-               FillHisto( h_sys_Jet1eta[i][2], (*Jet1).Eta() , v_SystEvt[i] );
-               FillHisto( h_sys_Jet1phi[i][2], (*Jet1).Phi() , v_SystEvt[i] );
-               FillHisto( h_sys_Jet2pt[i][2] , (*Jet2).Pt()  , v_SystEvt[i] );
-               FillHisto( h_sys_Jet2eta[i][2], (*Jet2).Eta() , v_SystEvt[i] );
-               FillHisto( h_sys_Jet2phi[i][2], (*Jet2).Phi() , v_SystEvt[i] );
-               FillHisto( h_sys_Num_Jets[i][2], v_jet_idx.size(), v_SystEvt[i] );
-               FillHisto( h_sys_METpt[i][2]   , Met->Pt()  , v_SystEvt[i] );
-               FillHisto( h_sys_METphi[i][2]  , Met->Phi()  , v_SystEvt[i] );
-            }
-         }
-         /////////////////////////      
-         // Num. Jet cut step 3 //
-         /////////////////////////
          JetDefiner();
-         //if ( NumJetCut(v_jet_idx) == false ) {continue;}
-         if ( NumJetCut(v_jet_idx) == true ) 
-         {
-/*            cout  << " Info_EventNumber : " << Info_EventNumber << " step 3 evt_weight_ : " << v_SystEvt[1] 
-                  << " Lep1 Pt : " << (*Lep1).Pt()
-                  << " Lep2 Pt : " << (*Lep2).Pt()
-                  << " Jet1 Pt : " << (*Jet1).Pt()
-                  << " Jet2 Pt : " << (*Jet2).Pt()
-                  << " MET : " << Met->Pt()
-                  << endl;*/
-            // Define Leading Jet and Second Leading Jet 
+         /// Step 3. Num Jet >=2 ///
+         if ( NumJetCut(v_jet_idx) == true ){
             FillHisto( h_EventWeight[3] , evt_weight_  );
             FillHisto( h_cf_NLeptons[3], v_lepton_idx.size(), evt_weight_ );
             FillHisto( h_cf_Lep1pt[3] , (*Lep1).Pt()  , evt_weight_ );
@@ -699,11 +559,11 @@ void ssb_analysis::Loop( char *logfile )
             FillHisto( h_cf_Jet2phi[3], (*Jet2).Phi() , evt_weight_ );
             FillHisto( h_cf_metpt[3] ,Met->Pt()  , evt_weight_ );
             FillHisto( h_cf_metphi[3],Met->Phi() , evt_weight_ );
-            
+
             FillHisto( h_cf_dilep_inv_mass[3], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
             FillHisto( h_cf_metpt[3] , Met->Pt() , evt_weight_ );
             FillHisto( h_cf_metphi[3], Met->Phi(), evt_weight_ );
-            
+
             FillHisto( h_Num_PV[3], num_pv, evt_weight_ );
             FillHisto( h_DiLepMass[3], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
             FillHisto( h_Lep1pt[3] , (*Lep1).Pt()  , evt_weight_ );
@@ -719,69 +579,14 @@ void ssb_analysis::Loop( char *logfile )
             FillHisto( h_Jet2eta[3], (*Jet2).Eta() , evt_weight_ );
             FillHisto( h_Jet2phi[3], (*Jet2).Phi() , evt_weight_ );
             FillHisto( h_Num_Jets[3], v_jet_idx.size(), evt_weight_ );
+            FillHisto( h_Num_bJets[3], nbtagged, evt_weight_ );
             FillHisto( h_METpt[3]   , Met->Pt()  , evt_weight_ );
             FillHisto( h_METphi[3]  , Met->Phi()  , evt_weight_ );
-
-            if (isAllSyst == true){
-               for ( int i = 0; i < v_SystFullName.size(); ++i )
-               {  
-                  if (TString(v_SystFullName[i]).Contains("Jet")  ){continue;}
-                  FillHisto( h_cf_sys_NLeptons[i][3], v_lepton_idx.size(), v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Lep1pt[i][3] , (*Lep1).Pt()  , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Lep1eta[i][3], (*Lep1).Eta() , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Lep1phi[i][3], (*Lep1).Phi() , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Lep2pt[i][3] , (*Lep2).Pt()  , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Lep2eta[i][3], (*Lep2).Eta() , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Lep2phi[i][3], (*Lep2).Phi() , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_NPV[i][3]    , num_pv        , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_NJets[i][3]  , v_jet_idx.size(), v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Jet1pt[i][3] , (*Jet1).Pt()  , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Jet1eta[i][3], (*Jet1).Eta() , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Jet1phi[i][3], (*Jet1).Phi() , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Jet2pt[i][3] , (*Jet2).Pt()  , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Jet2eta[i][3], (*Jet2).Eta() , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_Jet2phi[i][3], (*Jet2).Phi() , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_metpt[i][3] ,Met->Pt()  , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_metphi[i][3],Met->Phi() , v_SystEvt[i] );
-                  
-                  FillHisto( h_cf_sys_dilep_inv_mass[i][3], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                  FillHisto( h_cf_sys_metpt[i][3] , Met->Pt() , v_SystEvt[i] );
-                  FillHisto( h_cf_sys_metphi[i][3], Met->Phi(), v_SystEvt[i] );
-                  
-                  FillHisto( h_sys_Num_PV[i][3], num_pv, v_SystEvt[i] );
-                  FillHisto( h_sys_DiLepMass[i][3], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                  FillHisto( h_sys_Lep1pt[i][3] , (*Lep1).Pt()  , v_SystEvt[i] );
-                  FillHisto( h_sys_Lep1eta[i][3], (*Lep1).Eta() , v_SystEvt[i] );
-                  FillHisto( h_sys_Lep1phi[i][3], (*Lep1).Phi() , v_SystEvt[i] );
-                  FillHisto( h_sys_Lep2pt[i][3] , (*Lep2).Pt()  , v_SystEvt[i] );
-                  FillHisto( h_sys_Lep2eta[i][3], (*Lep2).Eta() , v_SystEvt[i] );
-                  FillHisto( h_sys_Lep2phi[i][3], (*Lep2).Phi() , v_SystEvt[i] );
-                  FillHisto( h_sys_Jet1pt[i][3] , (*Jet1).Pt()  , v_SystEvt[i] );
-                  FillHisto( h_sys_Jet1eta[i][3], (*Jet1).Eta() , v_SystEvt[i] );
-                  FillHisto( h_sys_Jet1phi[i][3], (*Jet1).Phi() , v_SystEvt[i] );
-                  FillHisto( h_sys_Jet2pt[i][3] , (*Jet2).Pt()  , v_SystEvt[i] );
-                  FillHisto( h_sys_Jet2eta[i][3], (*Jet2).Eta() , v_SystEvt[i] );
-                  FillHisto( h_sys_Jet2phi[i][3], (*Jet2).Phi() , v_SystEvt[i] );
-                  FillHisto( h_sys_Num_Jets[i][3], v_jet_idx.size(), v_SystEvt[i] );
-                  FillHisto( h_sys_METpt[i][3]   , Met->Pt()  , v_SystEvt[i] );
-                  FillHisto( h_sys_METphi[i][3]  , Met->Phi()  , v_SystEvt[i] );
-               }
-            }
-            //////////////////// 
-            // MET cut step 4 //
-            ////////////////////
-            //if ( METCut(Met) == false ) {continue;}
+   
             if ( METCut(Met) == true ) {
-/*            cout  << " Info_EventNumber : " << Info_EventNumber << " step 4 evt_weight_ : " << v_SystEvt[1] 
-                  << " Lep1 Pt : " << (*Lep1).Pt()
-                  << " Lep2 Pt : " << (*Lep2).Pt()
-                  << " Jet1 Pt : " << (*Jet1).Pt()
-                  << " Jet2 Pt : " << (*Jet2).Pt()
-                  << " MET : " << Met->Pt()
-                  << endl; */
                FillHisto( h_EventWeight[4] , evt_weight_  );
                FillHisto( h_cf_NLeptons[4], v_lepton_idx.size(), evt_weight_ );
-               
+
                FillHisto( h_cf_Lep1pt[4] , (*Lep1).Pt()  , evt_weight_ );
                FillHisto( h_cf_Lep1eta[4], (*Lep1).Eta() , evt_weight_ );
                FillHisto( h_cf_Lep1phi[4], (*Lep1).Phi() , evt_weight_ );
@@ -796,18 +601,18 @@ void ssb_analysis::Loop( char *logfile )
                FillHisto( h_cf_Jet2pt[4] , (*Jet2).Pt()  , evt_weight_ );
                FillHisto( h_cf_Jet2eta[4], (*Jet2).Eta() , evt_weight_ );
                FillHisto( h_cf_Jet2phi[4], (*Jet2).Phi() , evt_weight_ );
-               
+
                FillHisto( h_cf_dilep_inv_mass[4], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
                FillHisto( h_cf_metpt[4] , Met->Pt() , evt_weight_ );
                FillHisto( h_cf_metphi[4], Met->Phi(), evt_weight_ );
-               
+
                FillHisto( h_Lep1pt[4]  , Lep1->Pt() , evt_weight_ );
                FillHisto( h_Lep2pt[4]  , Lep2->Pt() , evt_weight_ );
                FillHisto( h_Lep1eta[4] , Lep1->Eta(), evt_weight_ );
                FillHisto( h_Lep2eta[4] , Lep2->Eta(), evt_weight_ );
                FillHisto( h_Lep1phi[4] , Lep1->Phi(), evt_weight_ );
                FillHisto( h_Lep2phi[4] , Lep2->Phi(), evt_weight_ );
-               
+
                FillHisto( h_Jet1pt[4]  , Jet1->Pt() , evt_weight_ );
                FillHisto( h_Jet2pt[4]  , Jet2->Pt() , evt_weight_ );
                FillHisto( h_Jet1eta[4] , Jet1->Eta(), evt_weight_ );
@@ -816,87 +621,16 @@ void ssb_analysis::Loop( char *logfile )
                FillHisto( h_Jet2phi[4] , Jet2->Phi(), evt_weight_ );
                FillHisto( h_METpt[4]   , Met->Pt()  , evt_weight_ );
                FillHisto( h_METphi[4]  , Met->Phi() , evt_weight_ );
-               
+
                FillHisto( h_DiLepMass[4], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
                FillHisto( h_Num_PV[4], num_pv, evt_weight_ );
                FillHisto( h_Num_Jets[4], v_jet_idx.size(), evt_weight_ );
-               if (isAllSyst == true)
-               {
-                  for ( int i = 0; i < v_SystFullName.size(); ++i )
-                  {  
-                     if (TString(v_SystFullName[i]).Contains("Jet")){continue;}
-                     FillHisto( h_cf_sys_NLeptons[i][4], v_lepton_idx.size(), v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Lep1pt[i][4] , (*Lep1).Pt()  , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Lep1eta[i][4], (*Lep1).Eta() , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Lep1phi[i][4], (*Lep1).Phi() , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Lep2pt[i][4] , (*Lep2).Pt()  , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Lep2eta[i][4], (*Lep2).Eta() , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Lep2phi[i][4], (*Lep2).Phi() , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_NPV[i][4]    , num_pv        , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_NJets[i][4]  , v_jet_idx.size(), v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Jet1pt[i][4] , (*Jet1).Pt()  , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Jet1eta[i][4], (*Jet1).Eta() , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Jet1phi[i][4], (*Jet1).Phi() , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Jet2pt[i][4] , (*Jet2).Pt()  , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Jet2eta[i][4], (*Jet2).Eta() , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_Jet2phi[i][4], (*Jet2).Phi() , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_metpt[i][4] ,Met->Pt()  , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_metphi[i][4],Met->Phi() , v_SystEvt[i] );
-                     
-                     FillHisto( h_cf_sys_dilep_inv_mass[i][4], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                     FillHisto( h_cf_sys_metpt[i][4] , Met->Pt() , v_SystEvt[i] );
-                     FillHisto( h_cf_sys_metphi[i][4], Met->Phi(), v_SystEvt[i] );
-                     
-                     FillHisto( h_sys_Num_PV[i][4], num_pv, v_SystEvt[i] );
-                     FillHisto( h_sys_DiLepMass[i][4], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                     FillHisto( h_sys_Lep1pt[i][4] , (*Lep1).Pt()  , v_SystEvt[i] );
-                     FillHisto( h_sys_Lep1eta[i][4], (*Lep1).Eta() , v_SystEvt[i] );
-                     FillHisto( h_sys_Lep1phi[i][4], (*Lep1).Phi() , v_SystEvt[i] );
-                     FillHisto( h_sys_Lep2pt[i][4] , (*Lep2).Pt()  , v_SystEvt[i] );
-                     FillHisto( h_sys_Lep2eta[i][4], (*Lep2).Eta() , v_SystEvt[i] );
-                     FillHisto( h_sys_Lep2phi[i][4], (*Lep2).Phi() , v_SystEvt[i] );
-                     FillHisto( h_sys_Jet1pt[i][4] , (*Jet1).Pt()  , v_SystEvt[i] );
-                     FillHisto( h_sys_Jet1eta[i][4], (*Jet1).Eta() , v_SystEvt[i] );
-                     FillHisto( h_sys_Jet1phi[i][4], (*Jet1).Phi() , v_SystEvt[i] );
-                     FillHisto( h_sys_Jet2pt[i][4] , (*Jet2).Pt()  , v_SystEvt[i] );
-                     FillHisto( h_sys_Jet2eta[i][4], (*Jet2).Eta() , v_SystEvt[i] );
-                     FillHisto( h_sys_Jet2phi[i][4], (*Jet2).Phi() , v_SystEvt[i] );
-                     FillHisto( h_sys_Num_Jets[i][4], v_jet_idx.size(), v_SystEvt[i] );
-                     FillHisto( h_sys_METpt[i][4]   , Met->Pt()  , v_SystEvt[i] );
-                     FillHisto( h_sys_METphi[i][4]  , Met->Phi()  , v_SystEvt[i] );
-                  }
-               }
-               double AllJetpt = 0;
-               for ( int ijet = 0; ijet < v_jet_idx.size(); ++ijet )
-               { 
-//                  TLorentzVector *htJet = (TLorentzVector*)Jet->At( v_jet_idx[ijet] );
-                  TLorentzVector *htJet = v_jet_TL[ijet];
-                  AllJetpt += htJet->Pt(); 
-               }
-               
-               FillHisto( h_HT[4], AllJetpt, evt_weight_);
-               /////////////////////////////////////////
-               /// One or more b-Tagging Requirement ///
-               /////////////////////////////////////////
-               if (JetPtPhiDil) { ApplyJetPtPhiDilution();}
-               
-               BTaggigSFApply();
-               //if ( BJetCut(v_bjet_idx) == false ) {continue;} // one or more b-tagging 
-               if ( BJetCut(v_bjet_idx) == true ) // one or more b-tagging 
-               { 
-/*            cout  << " Info_EventNumber : " << Info_EventNumber << " step 5 evt_weight_ : " << v_SystEvt[1] 
-                  << " Lep1 Pt : " << (*Lep1).Pt()
-                  << " Lep2 Pt : " << (*Lep2).Pt()
-                  << " Jet1 Pt : " << (*Jet1).Pt()
-                  << " Jet2 Pt : " << (*Jet2).Pt()
-                  << " bJet1 Pt : " << (*bJet1).Pt()
-                  << " bJet2 Pt : " << (*bJet2).Pt()
-                  << " MET : " << Met->Pt()
-                  << endl; */
-                  FillHisto(h_bTagWeight,evt_weight_/evt_weight_beforeBtag_); 
+               FillHisto( h_Num_bJets[4], nbtagged, evt_weight_ );
+               if ( BJetCut(v_bjet_idx) == true ){
+                  FillHisto(h_bTagWeight,evt_weight_/evt_weight_beforeBtag_);
                   FillHisto( h_EventWeight[5] , evt_weight_  );
                   FillHisto( h_cf_NLeptons[5], v_lepton_idx.size(), evt_weight_ );
-                  
+
                   FillHisto( h_cf_Lep1pt[5] , (*Lep1).Pt()  , evt_weight_ );
                   FillHisto( h_cf_Lep1eta[5], (*Lep1).Eta() , evt_weight_ );
                   FillHisto( h_cf_Lep1phi[5], (*Lep1).Phi() , evt_weight_ );
@@ -911,21 +645,21 @@ void ssb_analysis::Loop( char *logfile )
                   FillHisto( h_cf_Jet2pt[5] , (*Jet2).Pt()  , evt_weight_ );
                   FillHisto( h_cf_Jet2eta[5], (*Jet2).Eta() , evt_weight_ );
                   FillHisto( h_cf_Jet2phi[5], (*Jet2).Phi() , evt_weight_ );
-                  
+
                   FillHisto( h_cf_dilep_inv_mass[5], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
                   FillHisto( h_cf_metpt[5] , Met->Pt() , evt_weight_ );
                   FillHisto( h_cf_metphi[5], Met->Phi(), evt_weight_ );
-                  
-                  
+
+
                   FillHisto( h_Lep1pt[5]  , Lep1->Pt() , evt_weight_ );
                   FillHisto( h_Lep2pt[5]  , Lep2->Pt() , evt_weight_ );
                   FillHisto( h_Lep1eta[5] , Lep1->Eta(), evt_weight_ );
                   FillHisto( h_Lep2eta[5] , Lep2->Eta(), evt_weight_ );
                   FillHisto( h_Lep1phi[5] , Lep1->Phi(), evt_weight_ );
                   FillHisto( h_Lep2phi[5] , Lep2->Phi(), evt_weight_ );
-                  
+
                   if (TString(Decaymode).Contains("muel"))
-                  { 
+                  {
                      FillHisto( h_Muonpt[5]  , TMuon->Pt()      , evt_weight_ );
                      FillHisto( h_Elecpt[5]  , TElectron->Pt()  , evt_weight_ );
                      FillHisto( h_Muoneta[5] , TMuon->Eta()     , evt_weight_ );
@@ -933,7 +667,7 @@ void ssb_analysis::Loop( char *logfile )
                      FillHisto( h_Muonphi[5] , TMuon->Phi()     , evt_weight_ );
                      FillHisto( h_Elecphi[5] , TElectron->Phi() , evt_weight_ );
                   }
-                  
+
                   FillHisto( h_Jet1pt[5]  , Jet1->Pt() , evt_weight_ );
                   FillHisto( h_Jet2pt[5]  , Jet2->Pt() , evt_weight_ );
                   FillHisto( h_Jet1eta[5] , Jet1->Eta(), evt_weight_ );
@@ -942,2088 +676,21 @@ void ssb_analysis::Loop( char *logfile )
                   FillHisto( h_Jet2phi[5] , Jet2->Phi(), evt_weight_ );
                   FillHisto( h_METpt[5]   , Met->Pt()  , evt_weight_ );
                   FillHisto( h_METphi[5]  , Met->Phi() , evt_weight_ );
-                  
-                  
+
                   FillHisto( h_DiLepMass[5], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
-                  
+
                   FillHisto( h_Num_PV[5], num_pv, evt_weight_ );
                   FillHisto( h_Num_Jets[5], v_jet_idx.size(), evt_weight_ );
                   FillHisto( h_Num_bJets[5], nbtagged, evt_weight_ );
-                  
-                  FillHisto( h_HT[5], AllJetpt, evt_weight_);
-                  if (isAllSyst == true) {
-                     for ( int i = 0; i < v_SystFullName.size(); ++i )
-                     {  
-                        if (TString(v_SystFullName[i]).Contains("Jet")){continue;}
-                        FillHisto( h_cf_sys_NLeptons[i][5], v_lepton_idx.size(), v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Lep1pt[i][5] , (*Lep1).Pt()  , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Lep1eta[i][5], (*Lep1).Eta() , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Lep1phi[i][5], (*Lep1).Phi() , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Lep2pt[i][5] , (*Lep2).Pt()  , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Lep2eta[i][5], (*Lep2).Eta() , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Lep2phi[i][5], (*Lep2).Phi() , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_NPV[i][5]    , num_pv        , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_NJets[i][5]  , v_jet_idx.size(), v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Jet1pt[i][5] , (*Jet1).Pt()  , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Jet1eta[i][5], (*Jet1).Eta() , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Jet1phi[i][5], (*Jet1).Phi() , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Jet2pt[i][5] , (*Jet2).Pt()  , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Jet2eta[i][5], (*Jet2).Eta() , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_Jet2phi[i][5], (*Jet2).Phi() , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_metpt[i][5] ,Met->Pt()  , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_metphi[i][5],Met->Phi() , v_SystEvt[i] );
-                        
-                        FillHisto( h_cf_sys_dilep_inv_mass[i][5], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                        FillHisto( h_cf_sys_metpt[i][5] , Met->Pt() , v_SystEvt[i] );
-                        FillHisto( h_cf_sys_metphi[i][5], Met->Phi(), v_SystEvt[i] );
-                        
-                        FillHisto( h_sys_Num_PV[i][5], num_pv, v_SystEvt[i] );
-                        FillHisto( h_sys_DiLepMass[i][5], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                        FillHisto( h_sys_Lep1pt[i][5] , (*Lep1).Pt()  , v_SystEvt[i] );
-                        FillHisto( h_sys_Lep1eta[i][5], (*Lep1).Eta() , v_SystEvt[i] );
-                        FillHisto( h_sys_Lep1phi[i][5], (*Lep1).Phi() , v_SystEvt[i] );
-                        FillHisto( h_sys_Lep2pt[i][5] , (*Lep2).Pt()  , v_SystEvt[i] );
-                        FillHisto( h_sys_Lep2eta[i][5], (*Lep2).Eta() , v_SystEvt[i] );
-                        FillHisto( h_sys_Lep2phi[i][5], (*Lep2).Phi() , v_SystEvt[i] );
-                        FillHisto( h_sys_Jet1pt[i][5] , (*Jet1).Pt()  , v_SystEvt[i] );
-                        FillHisto( h_sys_Jet1eta[i][5], (*Jet1).Eta() , v_SystEvt[i] );
-                        FillHisto( h_sys_Jet1phi[i][5], (*Jet1).Phi() , v_SystEvt[i] );
-                        FillHisto( h_sys_Jet2pt[i][5] , (*Jet2).Pt()  , v_SystEvt[i] );
-                        FillHisto( h_sys_Jet2eta[i][5], (*Jet2).Eta() , v_SystEvt[i] );
-                        FillHisto( h_sys_Jet2phi[i][5], (*Jet2).Phi() , v_SystEvt[i] );
-                        FillHisto( h_sys_Num_Jets[i][5], v_jet_idx.size(), v_SystEvt[i] );
-                        FillHisto( h_sys_METpt[i][5]   , Met->Pt()  , v_SystEvt[i] );
-                        FillHisto( h_sys_METphi[i][5]  , Met->Phi()  , v_SystEvt[i] );
-                     }                 
-                  }
-                  TVector3 lepvec( Lep1->Px() + Lep2->Px(), Lep1->Py() + Lep2->Py(), Lep1->Pz() + Lep2->Pz() );
-                  TMatrixD matrix(3,3);
-                  
-                  double  vec[3];
-                  double  lep2 = lepvec.Mag2();
-                  double  _apla = 0;
-                  double  _sphe = 0;
-                  double  _plan = 0;
-                  
-                  for ( int i=0; i<3; i++)
-                  {
-                     for ( int j=0; j<3; j++ )
-                     {
-                        matrix(i,j) = lepvec(i)*lepvec(j);
-                        double norm = lep2;
-                        for ( int k=0; k<v_jet_idx.size(); k++ )
-                        {
-                           //TLorentzVector *topoJet = (TLorentzVector*)Jet->At( v_jet_idx[k] );
-                           TLorentzVector *topoJet =  v_jet_TL[k];
-                           vec[0] = topoJet->Px();
-                           vec[1] = topoJet->Py();
-                           vec[2] = topoJet->Pz();
-                           matrix(i,j) += vec[i]*vec[j];
-                           norm        += vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2];
-                        }
-                        if (norm > 0) matrix(i,j) /= norm;
-                     }
-                  }
-                  if ( v_jet_idx.size() > 0 )
-                  {
-                     TMatrixDEigen evmatrix(matrix);
-                     TVectorD eigenv=evmatrix.GetEigenValuesRe();
-                     matrix.EigenVectors(eigenv);
-                  
-                     _apla  = 1.5*eigenv(2);
-                     _sphe  = 1.5*(eigenv(2) + eigenv(1));
-                     _plan  = eigenv(1) - eigenv(2);
-                  }
-                  
-                  FillHisto(h_Topo_Apla[0] , _apla, evt_weight_);
-                  FillHisto(h_Topo_Sphe[0] , _sphe, evt_weight_);
-                  FillHisto(h_Topo_Plan[0] , _plan, evt_weight_);
-                  
-                  ///////////////////////////////////////
-                  /// 2 or More B-Tagging Requriement ///
-                  /////////////////////////////////////// 
-                  
-                  if ( DoubleBtag(v_bjet_idx) == true ) 
-                  {
-/*            cout  << " Info_EventNumber : " << Info_EventNumber << " step 6 evt_weight_ : " << v_SystEvt[1] 
-                  << " Lep1 Pt : " << (*Lep1).Pt()
-                  << " Lep2 Pt : " << (*Lep2).Pt()
-                  << " Jet1 Pt : " << (*Jet1).Pt()
-                  << " Jet2 Pt : " << (*Jet2).Pt()
-                  << " bJet1 Pt : " << (*bJet1).Pt()
-                  << " bJet2 Pt : " << (*bJet2).Pt()
-                  << " MET : " << Met->Pt()
-                  << endl;*/
-                     FillHisto( h_EventWeight[6], evt_weight_  );
-                     FillHisto( h_Lep1pt[6] , Lep1->Pt() , evt_weight_ );
-                     FillHisto( h_Lep2pt[6] , Lep2->Pt() , evt_weight_ );
-                     FillHisto( h_Lep1eta[6], Lep1->Eta(), evt_weight_ );
-                     FillHisto( h_Lep2eta[6], Lep2->Eta(), evt_weight_ );
-                     FillHisto( h_Lep1phi[6], Lep1->Phi(), evt_weight_ );
-                     FillHisto( h_Lep2phi[6], Lep2->Phi(), evt_weight_ );
-                     
-                     if (TString(Decaymode).Contains("muel"))
-                     { 
-                        FillHisto( h_Muonpt[6]  , TMuon->Pt()      , evt_weight_ );
-                        FillHisto( h_Elecpt[6]  , TElectron->Pt()  , evt_weight_ );
-                        FillHisto( h_Muoneta[6] , TMuon->Eta()     , evt_weight_ );
-                        FillHisto( h_Eleceta[6] , TElectron->Eta() , evt_weight_ );
-                        FillHisto( h_Muonphi[6] , TMuon->Phi()     , evt_weight_ );
-                        FillHisto( h_Elecphi[6] , TElectron->Phi() , evt_weight_ );
-                     }
-                     FillHisto( h_Jet1pt[6] , Jet1->Pt() , evt_weight_ );
-                     FillHisto( h_Jet2pt[6] , Jet2->Pt() , evt_weight_ );
-                     FillHisto( h_Jet1eta[6], Jet1->Eta(), evt_weight_ );
-                     FillHisto( h_Jet2eta[6], Jet2->Eta(), evt_weight_ );
-                     FillHisto( h_Jet1phi[6], Jet1->Phi(), evt_weight_ );
-                     FillHisto( h_Jet2phi[6], Jet2->Phi(), evt_weight_ );
-                     FillHisto( h_METpt[6]  , Met->Pt()  , evt_weight_ );
-                     FillHisto( h_METphi[6] , Met->Phi() , evt_weight_ );
-                     FillHisto( h_HT[6] , AllJetpt, evt_weight_);
-                   
-                     FillHisto( h_DiLepMass[6], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
-                     FillHisto( h_Num_PV[6]   , num_pv          , evt_weight_ );
-                     FillHisto( h_Num_Jets[6] , v_jet_idx.size(), evt_weight_ );
-                     FillHisto( h_Num_bJets[6], nbtagged        , evt_weight_ );
-                   
-                     FillHisto( h_cf_NLeptons[6], v_lepton_idx.size(), evt_weight_ );
-                     FillHisto( h_cf_Lep1pt[6] , (*Lep1).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Lep1eta[6], (*Lep1).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Lep1phi[6], (*Lep1).Phi() , evt_weight_ );
-                     FillHisto( h_cf_Lep2pt[6] , (*Lep2).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Lep2eta[6], (*Lep2).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Lep2phi[6], (*Lep2).Phi() , evt_weight_ );
-                     FillHisto( h_cf_NPV[6]    , num_pv        , evt_weight_ );
-                     FillHisto( h_cf_NJets[6]  , v_jet_idx.size(), evt_weight_ );
-                     FillHisto( h_cf_Jet1pt[6] , (*Jet1).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Jet1eta[6], (*Jet1).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Jet1phi[6], (*Jet1).Phi() , evt_weight_ );
-                     FillHisto( h_cf_Jet2pt[6] , (*Jet2).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Jet2eta[6], (*Jet2).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Jet2phi[6], (*Jet2).Phi() , evt_weight_ );
-                   
-                     FillHisto( h_cf_dilep_inv_mass[6], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
-                     FillHisto( h_cf_metpt[6] , Met->Pt() , evt_weight_ );
-                     FillHisto( h_cf_metphi[6], Met->Phi(), evt_weight_ );
-                   
-                   
-                     FillHisto( h_Topo_Apla[1] , _apla, evt_weight_);
-                     FillHisto( h_Topo_Sphe[1] , _sphe, evt_weight_);
-                     FillHisto( h_Topo_Plan[1] , _plan, evt_weight_);
-                     if (isAllSyst == true) {
-                        for ( int i = 0; i < v_SystFullName.size(); ++i )
-                        {  
-                           if (TString(v_SystFullName[i]).Contains("Jet")){continue;}
-//                           if ( TString(v_SystFullName[i]).Contains("PileUpUp") ) { cout << "evt_weight_ : " << v_SystEvt[i] << " Jet1 Pt : " << Jet1->Pt() << endl;}
-                           FillHisto( h_cf_sys_NLeptons[i][6], v_lepton_idx.size(), v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep1pt[i][6] , (*Lep1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep1eta[i][6], (*Lep1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep1phi[i][6], (*Lep1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep2pt[i][6] , (*Lep2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep2eta[i][6], (*Lep2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep2phi[i][6], (*Lep2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_NPV[i][6]    , num_pv        , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_NJets[i][6]  , v_jet_idx.size(), v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet1pt[i][6] , (*Jet1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet1eta[i][6], (*Jet1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet1phi[i][6], (*Jet1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet2pt[i][6] , (*Jet2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet2eta[i][6], (*Jet2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet2phi[i][6], (*Jet2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metpt[i][6] ,Met->Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metphi[i][6],Met->Phi() , v_SystEvt[i] );
-                           
-                           FillHisto( h_cf_sys_dilep_inv_mass[i][6], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metpt[i][6] , Met->Pt() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metphi[i][6], Met->Phi(), v_SystEvt[i] );
-                           
-                           FillHisto( h_sys_Num_PV[i][6], num_pv, v_SystEvt[i] );
-                           FillHisto( h_sys_DiLepMass[i][6], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                           FillHisto( h_sys_Lep1pt[i][6] , (*Lep1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep1eta[i][6], (*Lep1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep1phi[i][6], (*Lep1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep2pt[i][6] , (*Lep2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep2eta[i][6], (*Lep2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep2phi[i][6], (*Lep2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet1pt[i][6] , (*Jet1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet1eta[i][6], (*Jet1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet1phi[i][6], (*Jet1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet2pt[i][6] , (*Jet2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet2eta[i][6], (*Jet2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet2phi[i][6], (*Jet2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Num_Jets[i][6], v_jet_idx.size(), v_SystEvt[i] );
-                           FillHisto( h_sys_METpt[i][6]   , Met->Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_METphi[i][6]  , Met->Phi()  , v_SystEvt[i] );
-                        }
-                     }
-                  } // One or More b-tagging // Step 5 
-                   
-                  if (nbtagged ==2)// exactly 2b-tagging ..
-                  {
-//                     ApplyBTagWeight(-2);
-/*            cout  << " Info_EventNumber : " << Info_EventNumber << " step 7 evt_weight_ : " << v_SystEvt[1]
-                  << " Lep1 Pt : " << (*Lep1).Pt()
-                  << " Lep2 Pt : " << (*Lep2).Pt()
-                  << " Jet1 Pt : " << (*Jet1).Pt()
-                  << " Jet2 Pt : " << (*Jet2).Pt()
-                  << " bJet1 Pt : " << (*bJet1).Pt()
-                  << " bJet2 Pt : " << (*bJet2).Pt()
-                  << " MET : " << Met->Pt()
-                  << endl;*/
-                     FillHisto( h_EventWeight[7], evt_weight_  );
-                     FillHisto( h_cf_NLeptons[7], v_lepton_idx.size(), evt_weight_ );
-                  
-                     FillHisto( h_cf_Lep1pt[7] , (*Lep1).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Lep1eta[7], (*Lep1).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Lep1phi[7], (*Lep1).Phi() , evt_weight_ );
-                     FillHisto( h_cf_Lep2pt[7] , (*Lep2).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Lep2eta[7], (*Lep2).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Lep2phi[7], (*Lep2).Phi() , evt_weight_ );
-                     FillHisto( h_cf_NPV[7]    , num_pv        , evt_weight_ );
-                     FillHisto( h_cf_NJets[7]  , v_jet_idx.size(), evt_weight_ );
-                     FillHisto( h_cf_Jet1pt[7] , (*Jet1).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Jet1eta[7], (*Jet1).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Jet1phi[7], (*Jet1).Phi() , evt_weight_ );
-                     FillHisto( h_cf_Jet2pt[7] , (*Jet2).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Jet2eta[7], (*Jet2).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Jet2phi[7], (*Jet2).Phi() , evt_weight_ );
-                  
-                     FillHisto( h_cf_dilep_inv_mass[7], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
-                     FillHisto( h_cf_metpt[7] , Met->Pt() , evt_weight_ );
-                     FillHisto( h_cf_metphi[7], Met->Phi(), evt_weight_ );
-                  
-                     FillHisto( h_Lep1pt[7] , Lep1->Pt() , evt_weight_ );
-                     FillHisto( h_Lep2pt[7] , Lep2->Pt() , evt_weight_ );
-                     FillHisto( h_Lep1eta[7], Lep1->Eta(), evt_weight_ );
-                     FillHisto( h_Lep2eta[7], Lep2->Eta(), evt_weight_ );
-                     FillHisto( h_Lep1phi[7], Lep1->Phi(), evt_weight_ );
-                     FillHisto( h_Lep2phi[7], Lep2->Phi(), evt_weight_ );
-                    
-                     if (TString(Decaymode).Contains("muel"))
-                     { 
-                        FillHisto( h_Muonpt[7]  , TMuon->Pt()      , evt_weight_ );
-                        FillHisto( h_Elecpt[7]  , TElectron->Pt()  , evt_weight_ );
-                        FillHisto( h_Muoneta[7] , TMuon->Eta()     , evt_weight_ );
-                        FillHisto( h_Eleceta[7] , TElectron->Eta() , evt_weight_ );
-                        FillHisto( h_Muonphi[7] , TMuon->Phi()     , evt_weight_ );
-                        FillHisto( h_Elecphi[7] , TElectron->Phi() , evt_weight_ );
-                     }
-                     FillHisto( h_Jet1pt[7] , Jet1->Pt() , evt_weight_ );
-                     FillHisto( h_Jet2pt[7] , Jet2->Pt() , evt_weight_ );
-                     FillHisto( h_Jet1eta[7], Jet1->Eta(), evt_weight_ );
-                     FillHisto( h_Jet2eta[7], Jet2->Eta(), evt_weight_ );
-                     FillHisto( h_Jet1phi[7], Jet1->Phi(), evt_weight_ );
-                     FillHisto( h_Jet2phi[7], Jet2->Phi(), evt_weight_ );
-                     FillHisto( h_METpt[7]  , Met->Pt()  , evt_weight_ );
-                     FillHisto( h_METphi[7] , Met->Phi() , evt_weight_ );
-                     FillHisto( h_HT[7] , AllJetpt, evt_weight_);
-                  
-                     FillHisto( h_DiLepMass[7], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
-                  
-                     FillHisto( h_Num_PV[7]   , num_pv          , evt_weight_ );
-                     FillHisto( h_Num_Jets[7] , v_jet_idx.size(), evt_weight_ );
-                     FillHisto( h_Num_bJets[7], nbtagged        , evt_weight_ );
-                  
-                     FillHisto( h_Topo_Apla[2] , _apla, evt_weight_);
-                     FillHisto( h_Topo_Sphe[2] , _sphe, evt_weight_);
-                     FillHisto( h_Topo_Plan[2] , _plan, evt_weight_);
-                     if (isAllSyst == true) {
-                        for ( int i = 0; i < v_SystFullName.size(); ++i )
-                        {  
-                           if (TString(v_SystFullName[i]).Contains("Jet")){continue;}
-                           FillHisto( h_cf_sys_NLeptons[i][7], v_lepton_idx.size(), v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep1pt[i][7] , (*Lep1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep1eta[i][7], (*Lep1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep1phi[i][7], (*Lep1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep2pt[i][7] , (*Lep2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep2eta[i][7], (*Lep2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep2phi[i][7], (*Lep2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_NPV[i][7]    , num_pv        , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_NJets[i][7]  , v_jet_idx.size(), v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet1pt[i][7] , (*Jet1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet1eta[i][7], (*Jet1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet1phi[i][7], (*Jet1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet2pt[i][7] , (*Jet2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet2eta[i][7], (*Jet2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet2phi[i][7], (*Jet2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metpt[i][7] ,Met->Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metphi[i][7],Met->Phi() , v_SystEvt[i] );
-                           
-                           FillHisto( h_cf_sys_dilep_inv_mass[i][7], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metpt[i][7] , Met->Pt() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metphi[i][7], Met->Phi(), v_SystEvt[i] );
-                           
-                           FillHisto( h_sys_Num_PV[i][7], num_pv, v_SystEvt[i] );
-                           FillHisto( h_sys_DiLepMass[i][7], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                           FillHisto( h_sys_Lep1pt[i][7] , (*Lep1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep1eta[i][7], (*Lep1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep1phi[i][7], (*Lep1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep2pt[i][7] , (*Lep2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep2eta[i][7], (*Lep2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep2phi[i][7], (*Lep2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet1pt[i][7] , (*Jet1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet1eta[i][7], (*Jet1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet1phi[i][7], (*Jet1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet2pt[i][7] , (*Jet2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet2eta[i][7], (*Jet2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet2phi[i][7], (*Jet2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Num_Jets[i][7], v_jet_idx.size(), v_SystEvt[i] );
-                           FillHisto( h_sys_METpt[i][7]   , Met->Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_METphi[i][7]  , Met->Phi()  , v_SystEvt[i] );
-                        }
-                     }
-                  }         
-                  // Reconstruction of Top with KinSol.
-                  //KinSol();   
-                  SetUpKINObs(); 
-                  //SetGenLepAnLep();
-                  //if ( ksolweight_ != -1 )
-                  if (isKinSol)
-                  {
-                  /*cout  << " First Info_EventNumber : " << Info_EventNumber << " step 8 evt_weight_ : " << evt_weight_ 
-                  << " Lep1 Pt : " << (*Lep1).Pt()
-                  << " Lep2 Pt : " << (*Lep2).Pt()
-                  << " Jet1 Pt : " << (*Jet1).Pt()
-                  << " Jet2 Pt : " << (*Jet2).Pt()
-                  << " bJet Pt : " << (*bJet).Pt()
-                  << " AnbJet Pt : " << (*AnbJet).Pt()
-                  << " MET : " << Met->Pt()
-                  << " Top : " << Top->Pt()
-                  << " AnTop : " << AnTop->Pt()
-                  << " cp01 : " << ssbcpviol->getO1Vari( Top, AnTop, AnLep, Lep )
-                  << " cp03 : " << ssbcpviol->getO3Vari( bJet, AnbJet, AnLep, Lep )
-                  << endl;*/
-                     BandBbarJetDiff();
-/*            cout  << " Second Info_EventNumber : " << Info_EventNumber << " step 8 evt_weight_ : " << evt_weight_ 
-                  << " Lep1 Pt : " << (*Lep1).Pt()
-                  << " Lep2 Pt : " << (*Lep2).Pt()
-                  << " Jet1 Pt : " << (*Jet1).Pt()
-                  << " Jet2 Pt : " << (*Jet2).Pt()
-                  << " bJet Pt : " << (*bJet).Pt()
-                  << " AnbJet Pt : " << (*AnbJet).Pt()
-                  << " MET : " << Met->Pt()
-                  << " Top : " << Top->Pt()
-                  << " AnTop : " << AnTop->Pt()
-                  << " cp03 : " << ssbcpviol->getO3Vari( bJet, AnbJet, AnLep, Lep )
-                  << endl;*/
-                     FillHisto( h_EventWeight[8], evt_weight_  );
-                     FillHisto( h_cf_NLeptons[8], v_lepton_idx.size(), evt_weight_ );
-                  
-                     FillHisto( h_cf_Lep1pt[8] , (*Lep1).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Lep1eta[8], (*Lep1).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Lep1phi[8], (*Lep1).Phi() , evt_weight_ );
-                     FillHisto( h_cf_Lep2pt[8] , (*Lep2).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Lep2eta[8], (*Lep2).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Lep2phi[8], (*Lep2).Phi() , evt_weight_ );
-                     FillHisto( h_cf_NPV[8]    , num_pv        , evt_weight_ );
-                     FillHisto( h_cf_NJets[8]  , v_jet_idx.size(), evt_weight_ );
-                     FillHisto( h_cf_Jet1pt[8] , (*Jet1).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Jet1eta[8], (*Jet1).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Jet1phi[8], (*Jet1).Phi() , evt_weight_ );
-                     FillHisto( h_cf_Jet2pt[8] , (*Jet2).Pt()  , evt_weight_ );
-                     FillHisto( h_cf_Jet2eta[8], (*Jet2).Eta() , evt_weight_ );
-                     FillHisto( h_cf_Jet2phi[8], (*Jet2).Phi() , evt_weight_ );
-                  
-                     FillHisto( h_cf_dilep_inv_mass[8], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
-                     FillHisto( h_cf_metpt[8] , Met->Pt() , evt_weight_ );
-                     FillHisto( h_cf_metphi[8], Met->Phi(), evt_weight_ );
-                  
-                     FillHisto( h_Lep1pt[8] , Lep1->Pt() , evt_weight_ );
-                     FillHisto( h_Lep2pt[8] , Lep2->Pt() , evt_weight_ );
-                     FillHisto( h_Lep1eta[8], Lep1->Eta(), evt_weight_ );
-                     FillHisto( h_Lep2eta[8], Lep2->Eta(), evt_weight_ );
-                     FillHisto( h_Lep1phi[8], Lep1->Phi(), evt_weight_ );
-                     FillHisto( h_Lep2phi[8], Lep2->Phi(), evt_weight_ );
-                    
-                     if (TString(Decaymode).Contains("muel"))
-                     { 
-                        FillHisto( h_Muonpt[8]  , TMuon->Pt()      , evt_weight_ );
-                        FillHisto( h_Elecpt[8]  , TElectron->Pt()  , evt_weight_ );
-                        FillHisto( h_Muoneta[8] , TMuon->Eta()     , evt_weight_ );
-                        FillHisto( h_Eleceta[8] , TElectron->Eta() , evt_weight_ );
-                        FillHisto( h_Muonphi[8] , TMuon->Phi()     , evt_weight_ );
-                        FillHisto( h_Elecphi[8] , TElectron->Phi() , evt_weight_ );
-                     }
-                     FillHisto( h_Jet1pt[8] , Jet1->Pt() , evt_weight_ );
-                     FillHisto( h_Jet2pt[8] , Jet2->Pt() , evt_weight_ );
-                     FillHisto( h_Jet1eta[8], Jet1->Eta(), evt_weight_ );
-                     FillHisto( h_Jet2eta[8], Jet2->Eta(), evt_weight_ );
-                     FillHisto( h_Jet1phi[8], Jet1->Phi(), evt_weight_ );
-                     FillHisto( h_Jet2phi[8], Jet2->Phi(), evt_weight_ );
-                     FillHisto( h_METpt[8]  , Met->Pt()  , evt_weight_ );
-                     FillHisto( h_METphi[8] , Met->Phi() , evt_weight_ );
-                     FillHisto( h_HT[8]     , AllJetpt   , evt_weight_);
-                  
-                     FillHisto( h_DiLepMass[8], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
-                  
-                     FillHisto( h_Num_PV[8]   , num_pv          , evt_weight_ );
-                     FillHisto( h_Num_Jets[8] , v_jet_idx.size(), evt_weight_ );
-                     FillHisto( h_Num_bJets[8], nbtagged        , evt_weight_ );
-                  
-                     FillHisto( h_Topo_Apla[3] , _apla, evt_weight_);
-                     FillHisto( h_Topo_Sphe[3] , _sphe, evt_weight_);
-                     FillHisto( h_Topo_Plan[3] , _plan, evt_weight_);
-                     if ( Top->Pt() > AnTop->Pt() ) { (*Top1) = (*Top); (*Top2) = (*AnTop); }
-                     else { (*Top1) = (*AnTop); (*Top2) = (*Top); }
 
-                     if (isAllSyst == true){
-                        for ( int i = 0; i < v_SystFullName.size(); ++i )
-                        {  
-                           if (TString(v_SystFullName[i]).Contains("Jet")){continue;}
-                           FillHisto( h_cf_sys_NLeptons[i][8], v_lepton_idx.size(), v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep1pt[i][8] , (*Lep1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep1eta[i][8], (*Lep1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep1phi[i][8], (*Lep1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep2pt[i][8] , (*Lep2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep2eta[i][8], (*Lep2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Lep2phi[i][8], (*Lep2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_NPV[i][8]    , num_pv        , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_NJets[i][8]  , v_jet_idx.size(), v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet1pt[i][8] , (*Jet1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet1eta[i][8], (*Jet1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet1phi[i][8], (*Jet1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet2pt[i][8] , (*Jet2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet2eta[i][8], (*Jet2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_Jet2phi[i][8], (*Jet2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metpt[i][8] ,Met->Pt()  , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metphi[i][8],Met->Phi() , v_SystEvt[i] );
-                           
-                           FillHisto( h_cf_sys_dilep_inv_mass[i][8], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metpt[i][8] , Met->Pt() , v_SystEvt[i] );
-                           FillHisto( h_cf_sys_metphi[i][8], Met->Phi(), v_SystEvt[i] );
-                           
-                           FillHisto( h_sys_Num_PV[i][8], num_pv, v_SystEvt[i] );
-                           FillHisto( h_sys_DiLepMass[i][8], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[i] );
-                           FillHisto( h_sys_Lep1pt[i][8] , (*Lep1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep1eta[i][8], (*Lep1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep1phi[i][8], (*Lep1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep2pt[i][8] , (*Lep2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep2eta[i][8], (*Lep2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Lep2phi[i][8], (*Lep2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet1pt[i][8] , (*Jet1).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet1eta[i][8], (*Jet1).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet1phi[i][8], (*Jet1).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet2pt[i][8] , (*Jet2).Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet2eta[i][8], (*Jet2).Eta() , v_SystEvt[i] );
-                           FillHisto( h_sys_Jet2phi[i][8], (*Jet2).Phi() , v_SystEvt[i] );
-                           FillHisto( h_sys_Num_Jets[i][8], v_jet_idx.size(), v_SystEvt[i] );
-                           FillHisto( h_sys_METpt[i][8]   , Met->Pt()  , v_SystEvt[i] );
-                           FillHisto( h_sys_METphi[i][8]  , Met->Phi()  , v_SystEvt[i] );
-
-                           FillHisto( h_sys_Top1Mass_[i]    , Top1->M()        , v_SystEvt[i] );
-                           FillHisto( h_sys_Top1pt_[i]      , Top1->Pt()       , v_SystEvt[i] );
-                           FillHisto( h_sys_Top1phi_[i]     , Top1->Phi()      , v_SystEvt[i] );
-                           FillHisto( h_sys_Top1Rapidity_[i], Top1->Rapidity() , v_SystEvt[i] );
-                           FillHisto( h_sys_Top1Energy_[i]  , Top1->Energy()   , v_SystEvt[i] );
-                           FillHisto( h_sys_Top2Mass_[i]    , Top2->M()        , v_SystEvt[i] );
-                           FillHisto( h_sys_Top2pt_[i]      , Top2->Pt()       , v_SystEvt[i] );
-                           FillHisto( h_sys_Top2phi_[i]     , Top2->Phi()      , v_SystEvt[i] );
-                           FillHisto( h_sys_Top2Rapidity_[i], Top2->Rapidity() , v_SystEvt[i] );
-                           FillHisto( h_sys_Top2Energy_[i]  , Top2->Energy()   , v_SystEvt[i] );
-
-                           FillHisto( h_sys_TopMass_[i]      , Top->M()         , v_SystEvt[i] );
-                           FillHisto( h_sys_Toppt_[i]        , Top->Pt()        , v_SystEvt[i] );
-                           FillHisto( h_sys_Topphi_[i]       , Top->Phi()       , v_SystEvt[i] );
-                           FillHisto( h_sys_TopRapidity_[i]  , Top->Rapidity()  , v_SystEvt[i] );
-                           FillHisto( h_sys_TopEnergy_[i]    , Top->Energy()    , v_SystEvt[i] );
-                           FillHisto( h_sys_AnTopMass_[i]    , AnTop->M()       , v_SystEvt[i] );
-                           FillHisto( h_sys_AnToppt_[i]      , AnTop->Pt()      , v_SystEvt[i] );
-                           FillHisto( h_sys_AnTopphi_[i]     , AnTop->Phi()     , v_SystEvt[i] );
-                           FillHisto( h_sys_AnTopRapidity_[i], AnTop->Rapidity(), v_SystEvt[i] );
-                           FillHisto( h_sys_AnTopEnergy_[i]  , AnTop->Energy()  , v_SystEvt[i] );
-
-                        }
-                     }
-                  
-                     FillHisto( h_TopMass      , Top->M()         , evt_weight_ );
-                     FillHisto( h_Toppt        , Top->Pt()        , evt_weight_ );
-                     FillHisto( h_Topphi       , Top->Phi()       , evt_weight_ );
-                     FillHisto( h_TopRapidity  , Top->Rapidity()  , evt_weight_ );
-                     FillHisto( h_TopEnergy    , Top->Energy()    , evt_weight_ );
-                     FillHisto( h_AnTopMass    , AnTop->M()       , evt_weight_ );
-                     FillHisto( h_AnToppt      , AnTop->Pt()      , evt_weight_ );
-                     FillHisto( h_AnTopphi     , AnTop->Phi()     , evt_weight_ );
-                     FillHisto( h_AnTopRapidity, AnTop->Rapidity(), evt_weight_ );
-                     FillHisto( h_AnTopEnergy  , AnTop->Energy()  , evt_weight_ );
-                  
-                  
-                     FillHisto( h_W1Mass , W1->M()  , evt_weight_ );
-                     FillHisto( h_W2Mass , W2->M()  , evt_weight_ );
-                  
-                     FillHisto( h_W1Mt , W1->Mt()  , evt_weight_ );
-                     FillHisto( h_W2Mt , W2->Mt()  , evt_weight_ );
-                  
-                     FillHisto( h_bJet1Energy , bJet1->Energy()  , evt_weight_ );
-                     FillHisto( h_bJet2Energy , bJet2->Energy()  , evt_weight_ );
-                  
-                     FillHisto( h_bJetEnergy   , bJet->Energy()   , evt_weight_ );
-                     FillHisto( h_AnbJetEnergy , AnbJet->Energy() , evt_weight_ );
-                     FillHisto( h_bJetPt       , bJet->Pt()   , evt_weight_ );
-                     FillHisto( h_AnbJetPt     , AnbJet->Pt() , evt_weight_ );
-                     FillHisto( h_LepEnergy    , Lep->Energy()    , evt_weight_ );
-                     FillHisto( h_AnLepEnergy  , AnLep->Energy()  , evt_weight_ );
-                     FillHisto( h_NuEnergy     , Nu->Energy()     , evt_weight_ );
-                     FillHisto( h_AnNuEnergy   , AnNu->Energy()   , evt_weight_ );
-                  
-                     /// Kin Solver Purity ... ///
-                     FillHisto( h2_TopMassVsLepBMass    , Top->M() ,((*Lep)+(*AnbJet)).M()   , evt_weight_ );
-                     FillHisto( h2_AnTopMassVsLepBMass  , AnTop->M() ,((*AnLep)+(*bJet)).M()   , evt_weight_ );
-                     FillHisto( h2_AnLepBMassVsLepBMass , ((*Lep)+(*AnbJet)).M() ,((*AnLep)+(*bJet)).M()   , evt_weight_ );
-                  
-                     FillHisto( h_LepbJetMass   , ((*Lep)+(*AnbJet)).M() , evt_weight_ );
-                     FillHisto( h_AnLepbJetMass , ((*AnLep)+(*bJet)).M() , evt_weight_ );
-                  
-                     LepAnLepMisCharge();
-                     
-                  
-                     // Calculating O3 variable
-                     double cpO3 = ssbcpviol->getO3Vari( bJet , AnbJet, AnLep, Lep );
-                     double cpO3_jprup = ssbcpviol->getO3VariJPRUp( bJet ,AnbJet , AnLep ,Lep );
-                     double cpO3_jprdown = ssbcpviol->getO3VariJPRDown( bJet ,AnbJet , AnLep ,Lep );
-                  
-                     double cpOb = ssbcpviol->getObVari( bJet , AnbJet, AnLep, Lep );
-                     double cpO5 = ssbcpviol->getO5Vari( bJet , AnbJet, AnLep, Lep );
-                     if (cpO3 == 0.0 ){cout << "--00000000000000--" << cpO3 << endl;}
-                     // Calculating O3 error. 
-                     if (cpO3 > 0.0) {Num_cpo3_p++;
-      //                  cout << "evt_weight_ ^2 " << evt_weight_*evt_weight_ << endl;
-                        FillHisto( h_CPO3_evtweight,0.5,evt_weight_);
-                        FillHisto( h_CPO3_evtweight,6.5,evt_weight_*evt_weight_);
-                        FillHisto( h_CPO3_Plus,cpO3,evt_weight_);
-                     }
-                     else           { Num_cpo3_m++; Nm_eventw_2 += (evt_weight_*evt_weight_);
-                        FillHisto( h_CPO3_evtweight,2.5,evt_weight_);
-                        FillHisto( h_CPO3_evtweight,8.5,evt_weight_*evt_weight_);
-                        laecO3 += 50;
-                        FillHisto( h_CPO3_Minus,cpO3,evt_weight_);
-                     }
-                  
-                     if (cpOb > 0.0) {
-                        FillHisto( h_CPOb_evtweight,0.5,evt_weight_);
-                        FillHisto( h_CPOb_evtweight,6.5,evt_weight_*evt_weight_);
-                     }
-                     else           { 
-                        FillHisto( h_CPOb_evtweight,2.5,evt_weight_);
-                        FillHisto( h_CPOb_evtweight,8.5,evt_weight_*evt_weight_);
-                        laecOb += 50;
-                     }
-                  
-                     if (cpO5 > 0.0) {
-                        FillHisto( h_CPO5_evtweight,0.5,evt_weight_);
-                        FillHisto( h_CPO5_evtweight,6.5,evt_weight_*evt_weight_);
-                     }
-                     else           { 
-                        FillHisto( h_CPO5_evtweight,2.5,evt_weight_);
-                        FillHisto( h_CPO5_evtweight,8.5,evt_weight_*evt_weight_);
-                        laecO5 += 50;
-                     }
-                  
-                     /// Jet pT Variation Study For Dilution
-                     if (cpO3 > 0.0 && cpO3_jprup > 0.0 )FillHisto( h_CPO3_JPRUp_Plus_Plus ,  cpO3_jprup, evt_weight_ );
-                     if (cpO3 > 0.0 && cpO3_jprup < 0.0 )FillHisto( h_CPO3_JPRUp_Plus_Minus,  cpO3_jprup, evt_weight_ );
-                     if (cpO3 < 0.0 && cpO3_jprup < 0.0 )FillHisto( h_CPO3_JPRUp_Minus_Minus, cpO3_jprup, evt_weight_ );
-                     if (cpO3 < 0.0 && cpO3_jprup > 0.0 )FillHisto( h_CPO3_JPRUp_Minus_Plus,  cpO3_jprup, evt_weight_ );
-                  
-                     if (cpO3 > 0.0 && cpO3_jprdown > 0.0 )FillHisto( h_CPO3_JPRDown_Plus_Plus ,  cpO3_jprdown, evt_weight_ );
-                     if (cpO3 > 0.0 && cpO3_jprdown < 0.0 )FillHisto( h_CPO3_JPRDown_Plus_Minus,  cpO3_jprdown, evt_weight_ );
-                     if (cpO3 < 0.0 && cpO3_jprdown < 0.0 )FillHisto( h_CPO3_JPRDown_Minus_Minus, cpO3_jprdown, evt_weight_ );
-                     if (cpO3 < 0.0 && cpO3_jprdown > 0.0 )FillHisto( h_CPO3_JPRDown_Minus_Plus,  cpO3_jprdown, evt_weight_ );
-                  
-                  
-//                     cout << "laec ? " << laec << endl;
-                     
-                     // Calculating Bjorken variables
-                     Bjorken( Lep , AnLep , bJet, AnbJet , Nu , AnNu ); 
-                  
-                     FillHisto( h_CPO3_reco        , cpO3         , evt_weight_ );
-                     FillHisto( h_CPO3_reco_JPRUp  , cpO3_jprup   , evt_weight_ );
-                     FillHisto( h_CPO3_reco_JPRDown, cpO3_jprdown , evt_weight_ );
-                     FillHisto( h_CPOb_reco, ssbcpviol->getObVari( bJet , AnbJet, AnLep, Lep ) , evt_weight_ );
-                     FillHisto( h_CPO5_reco, ssbcpviol->getO5Vari( bJet , AnbJet, AnLep, Lep ) , evt_weight_ );
-                     FillHisto( h_BjorkenX1, x1_bj, evt_weight_ );
-                     FillHisto( h_BjorkenX2, x2_bj, evt_weight_ );
-                     FillHisto( h_BjorkenX3, x3_bj, evt_weight_ );
-                     
-                     // Get CP-Violation Variables //
-                     v_recocp_O.clear();
-                     v_recocp_O.push_back( ssbcpviol->getO1Vari( Top, AnTop, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO2Vari( Top, AnTop, bJet, AnbJet ) );
-                     v_recocp_O.push_back( ssbcpviol->getO3Vari( bJet, AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO4Vari( AnbJet, bJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO5Vari( bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO6Vari( bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO7Vari( Top , AnTop, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO8Vari( Top, AnTop, bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO9Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO10Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO11Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO12Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO13Vari( bJet , AnbJet, AnLep, Lep )  );
-
-                     NewLepAnLepMisCharge();
-                     for (int i = 0; i < v_recocp_O.size(); ++ i)
-                     {
-                        FillHisto( h_Reco_CPO_[i], v_recocp_O[i] , evt_weight_ );
-                        FillHisto( h_Reco_CPO_ReRange_[i], v_recocp_O[i] , evt_weight_ );
-                        FillHisto( h_LepAnLepEngCheck_[i], v_MisCharge[i] , evt_weight_ );
-                     }
-                     if (isAllSyst == true){
-                        for (int i = 0; i <  v_SystEvt.size(); ++ i)
-                        {
-                           if (TString(v_SystFullName[i]).Contains("Jet")){continue;}
-                           for (int j = 0; j < v_recocp_O.size(); ++ j )
-                           {
-                              FillHisto( h_sys_Reco_CPO_[i][j], v_recocp_O[j] , v_SystEvt[i]   );
-                              FillHisto( h_sys_Reco_CPO_ReRange_[i][j], v_recocp_O[j] , v_SystEvt[i]  );
-                           }
-                        }
-                     } 
-                     FillHisto( h_Top1Mass    , Top1->M()        , evt_weight_ );
-                     FillHisto( h_Top1pt      , Top1->Pt()       , evt_weight_ );
-                     FillHisto( h_Top1phi     , Top1->Phi()      , evt_weight_ );
-                     FillHisto( h_Top1Rapidity, Top1->Rapidity() , evt_weight_ );
-                     FillHisto( h_Top1Energy  , Top1->Energy()   , evt_weight_ );
-                  
-                     FillHisto( h_Top2Mass    , Top2->M()        , evt_weight_ );
-                     FillHisto( h_Top2pt      , Top2->Pt()       , evt_weight_ );
-                     FillHisto( h_Top2phi     , Top2->Phi()      , evt_weight_ );
-                     FillHisto( h_Top2Rapidity, Top2->Rapidity() , evt_weight_ );
-                     FillHisto( h_Top2Energy  , Top2->Energy()   , evt_weight_ );
-                     // BJet - BJet //
-                     FillHisto( h_Diff_BBar_Pt    , fabs( bJet->Pt() - AnbJet->Pt() )         , evt_weight_ );
-                     FillHisto( h_Diff_BBar_Energy, fabs( bJet->Energy() - AnbJet->Energy() ) , evt_weight_ );
-                     FillHisto( h_Diff_BBar_P     , fabs( bJet->P() - AnbJet->P() )           , evt_weight_ );
-                  
-                     FillHisto( h_Diff_LepAnLep_Pt    , fabs( Lep->Pt() - AnLep->Pt() )         , evt_weight_ );
-                     FillHisto( h_Diff_LepAnLep_Energy, fabs( Lep->Energy() - AnLep->Energy() ) , evt_weight_ );
-                     FillHisto( h_Diff_LepAnLep_P     , fabs( Lep->P() - AnLep->P() )           , evt_weight_ );
-                  
-                     FillHisto( h_LepAnLepEngCheckO3    , laecO3 , evt_weight_ );
-                     FillHisto( h_LepAnLepEngCheckOb    , laecOb , evt_weight_ );
-                     FillHisto( h_LepAnLepEngCheckO5    , laecO5 , evt_weight_ );
-                  
-                     ////////////////////////////////
-                     /// JetAngular Study Area ...///
-                     ////////////////////////////////
-                     double recocpO3_etavariup   = ssbcpviol->getO3Vari( ssbcpviol->JetAngEta(bJet,"up"  ),ssbcpviol->JetAngEta(AnbJet,"up"  ), AnLep, Lep );
-                     double recocpO3_etavaridown = ssbcpviol->getO3Vari( ssbcpviol->JetAngEta(bJet,"down"),ssbcpviol->JetAngEta(AnbJet,"down"), AnLep, Lep );
-                     double recocpO3_phivariup   = ssbcpviol->getO3Vari( ssbcpviol->JetAngPhi(bJet,"up"  ),ssbcpviol->JetAngPhi(AnbJet,"up"  ), AnLep, Lep );
-                     double recocpO3_phivaridown = ssbcpviol->getO3Vari( ssbcpviol->JetAngPhi(bJet,"down"),ssbcpviol->JetAngPhi(AnbJet,"down"), AnLep, Lep );
-                  
-                     FillHisto( h_CPO3_EtaVariUp,  recocpO3_etavariup,  evt_weight_);
-                     FillHisto( h_CPO3_EtaVariDown,recocpO3_etavaridown,evt_weight_);
-                     FillHisto( h_CPO3_PhiVariUp,  recocpO3_phivariup,  evt_weight_);
-                     FillHisto( h_CPO3_PhiVariDown,recocpO3_phivaridown,evt_weight_);
-                     if (cpO3 > 0.0) {
-                        FillHisto( h_CPO3reco_evtweight,0.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight,6.5,evt_weight_*evt_weight_);
-                     }
-                     else{
-                        FillHisto( h_CPO3reco_evtweight,2.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight,8.5,evt_weight_*evt_weight_);
-                     }
-                  
-                     //////////////////////////////////////////////////////////// 
-                     /// CPO3 with Eta Variation (Up) at Reconstruction Level ///
-                     //////////////////////////////////////////////////////////// 
-                     if ( recocpO3_etavariup > 0.0) {
-                        FillHisto( h_CPO3reco_evtweight_EtaVariUp,0.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight_EtaVariUp,6.5,evt_weight_*evt_weight_);
-                     }
-                     else{
-                        FillHisto( h_CPO3reco_evtweight_EtaVariUp,2.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight_EtaVariUp,8.5,evt_weight_*evt_weight_);
-                     }
-                  
-                     if ( cpO3 > 0.0  && recocpO3_etavariup > 0.0 )
-                     {
-                        FillHisto( h_CPO3_EtaVariUp_Plus_Plus,recocpO3_etavariup,evt_weight_);
-                     }
-                     if ( cpO3 > 0.0  && recocpO3_etavariup < 0.0 )
-                     {
-                        FillHisto( h_CPO3_EtaVariUp_Plus_Minus,recocpO3_etavariup,evt_weight_);
-                     }
-                  
-                     if ( cpO3 < 0.0  && recocpO3_etavariup > 0.0 )
-                     {
-                        FillHisto( h_CPO3_EtaVariUp_Minus_Plus,recocpO3_etavariup,evt_weight_);
-                     }
-                     if ( cpO3 < 0.0  && recocpO3_etavariup < 0.0 )
-                     {
-                        FillHisto( h_CPO3_EtaVariUp_Minus_Minus,recocpO3_etavariup,evt_weight_);
-                     }
-                  
-                     ////////////////////////////////////////////////////////////// 
-                     /// CPO3 with Eta Variation (Down) at Reconstruction Level ///
-                     //////////////////////////////////////////////////////////////
-                     if (recocpO3_etavaridown > 0.0) {
-                        FillHisto( h_CPO3reco_evtweight_EtaVariDown,0.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight_EtaVariDown,6.5,evt_weight_*evt_weight_);
-                     }
-                     else{
-                        FillHisto( h_CPO3reco_evtweight_EtaVariDown,2.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight_EtaVariDown,8.5,evt_weight_*evt_weight_);
-                     }
-                     if ( cpO3 > 0.0  && recocpO3_etavaridown > 0.0 )
-                     {
-                        FillHisto( h_CPO3_EtaVariDown_Plus_Plus,recocpO3_etavaridown,evt_weight_);
-                     }
-                     if ( cpO3 > 0.0  && recocpO3_etavaridown < 0.0 )
-                     {
-                        FillHisto( h_CPO3_EtaVariDown_Plus_Minus,recocpO3_etavaridown,evt_weight_);
-                     }
-                  
-                     if ( cpO3 < 0.0  && recocpO3_etavaridown > 0.0 )
-                     {
-                        FillHisto( h_CPO3_EtaVariDown_Minus_Plus,recocpO3_etavaridown,evt_weight_);
-                     }
-                     if ( cpO3 < 0.0  && recocpO3_etavaridown < 0.0 )
-                     {
-                        FillHisto( h_CPO3_EtaVariDown_Minus_Minus,recocpO3_etavaridown,evt_weight_);
-                     }
-                  
-                     //////////////////////////////////////////////////////////// 
-                     /// CPO3 with Phi Variation (Up) at Reconstruction Level ///
-                     //////////////////////////////////////////////////////////// 
-                     if (recocpO3_phivariup > 0.0) {
-                        FillHisto( h_CPO3reco_evtweight_PhiVariUp,0.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight_PhiVariUp,6.5,evt_weight_*evt_weight_);
-                     }
-                     else{
-                        FillHisto( h_CPO3reco_evtweight_PhiVariUp,2.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight_PhiVariUp,8.5,evt_weight_*evt_weight_);
-                     }
-                     if ( recocpO3_phivariup > 0.0) {
-                        FillHisto( h_CPO3reco_evtweight_PhiVariUp,0.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight_PhiVariUp,6.5,evt_weight_*evt_weight_);
-                     }
-                     else{
-                        FillHisto( h_CPO3reco_evtweight_PhiVariUp,2.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight_PhiVariUp,8.5,evt_weight_*evt_weight_);
-                     }
-                  
-                     if ( cpO3 > 0.0  && recocpO3_phivariup > 0.0 )
-                     {
-                        FillHisto( h_CPO3_PhiVariUp_Plus_Plus,recocpO3_phivariup,evt_weight_);
-                     }
-                     if ( cpO3 > 0.0  && recocpO3_phivariup < 0.0 )
-                     {
-                        FillHisto( h_CPO3_PhiVariUp_Plus_Minus,recocpO3_phivariup,evt_weight_);
-                     }
-                  
-                     if ( cpO3 < 0.0  && recocpO3_phivariup > 0.0 )
-                     {
-                        FillHisto( h_CPO3_PhiVariUp_Minus_Plus,recocpO3_phivariup,evt_weight_);
-                     }
-                     if ( cpO3 < 0.0  && recocpO3_phivariup < 0.0 )
-                     {
-                        FillHisto( h_CPO3_PhiVariUp_Minus_Minus,recocpO3_phivariup,evt_weight_);
-                     }
-                     ////////////////////////////////////////////////////////////// 
-                     /// CPO3 with Phi Variation (Down) at Reconstruction Level ///
-                     //////////////////////////////////////////////////////////////
-                  
-                     if (recocpO3_phivaridown > 0.0) {
-                        FillHisto( h_CPO3reco_evtweight_PhiVariDown,0.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight_PhiVariDown,6.5,evt_weight_*evt_weight_);
-                     }
-                     else{
-                        FillHisto( h_CPO3reco_evtweight_PhiVariDown,2.5,evt_weight_);
-                        FillHisto( h_CPO3reco_evtweight_PhiVariDown,8.5,evt_weight_*evt_weight_);
-                     }
-                     if ( cpO3 > 0.0  && recocpO3_phivaridown > 0.0 )
-                     {
-                        FillHisto( h_CPO3_PhiVariDown_Plus_Plus,recocpO3_phivaridown,evt_weight_);
-                     }
-                     if ( cpO3 > 0.0  && recocpO3_phivaridown < 0.0 )
-                     {
-                        FillHisto( h_CPO3_PhiVariDown_Plus_Minus,recocpO3_phivaridown,evt_weight_);
-                     }
-                  
-                     if ( cpO3 < 0.0  && recocpO3_phivaridown > 0.0 )
-                     {
-                        FillHisto( h_CPO3_PhiVariDown_Minus_Plus,recocpO3_phivaridown,evt_weight_);
-                     }
-                     if ( cpO3 < 0.0  && recocpO3_phivaridown < 0.0 )
-                     {
-                        FillHisto( h_CPO3_PhiVariDown_Minus_Minus,recocpO3_phivaridown,evt_weight_);
-                     }
-
-                  } // KinSolver // for central !!
-               } // bJetcut 1- or More //
-            }  // MET Cut 
-         } // Num Jet Cut 
-
-         ///////////////////////////////
-         /// JES Up Systematic Study ///
-         ///////////////////////////////
-         if ( NumJetCut(v_jetup_idx) == true && isAllSyst == true && idx_jecup != -2 ) 
-         {
-
-            FillHisto( h_cf_sys_NLeptons[idx_jecup][3], v_lepton_idx.size(), v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Lep1pt[idx_jecup][3] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Lep1eta[idx_jecup][3], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Lep1phi[idx_jecup][3], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Lep2pt[idx_jecup][3] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Lep2eta[idx_jecup][3], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Lep2phi[idx_jecup][3], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_NPV[idx_jecup][3]    , num_pv        , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_NJets[idx_jecup][3]  , v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Jet1pt[idx_jecup][3] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Jet1eta[idx_jecup][3], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Jet1phi[idx_jecup][3], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Jet2pt[idx_jecup][3] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Jet2eta[idx_jecup][3], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_Jet2phi[idx_jecup][3], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_metpt[idx_jecup][3] ,MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_metphi[idx_jecup][3],MetJESUp->Phi() , v_SystEvt[idx_jecup] );
-            
-            FillHisto( h_cf_sys_dilep_inv_mass[idx_jecup][3], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_metpt[idx_jecup][3] , MetJESUp->Pt() , v_SystEvt[idx_jecup] );
-            FillHisto( h_cf_sys_metphi[idx_jecup][3], MetJESUp->Phi(), v_SystEvt[idx_jecup] );
-            
-            FillHisto( h_sys_Num_PV[idx_jecup][3], num_pv, v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_DiLepMass[idx_jecup][3], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Lep1pt[idx_jecup][3] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Lep1eta[idx_jecup][3], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Lep1phi[idx_jecup][3], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Lep2pt[idx_jecup][3] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Lep2eta[idx_jecup][3], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Lep2phi[idx_jecup][3], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Jet1pt[idx_jecup][3] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Jet1eta[idx_jecup][3], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Jet1phi[idx_jecup][3], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Jet2pt[idx_jecup][3] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Jet2eta[idx_jecup][3], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Jet2phi[idx_jecup][3], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_Num_Jets[idx_jecup][3], v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_METpt[idx_jecup][3]   , MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-            FillHisto( h_sys_METphi[idx_jecup][3]  , MetJESUp->Phi()  , v_SystEvt[idx_jecup] );
-            if ( METCut(MetJESUp) == true ) 
-            {
-               FillHisto( h_cf_sys_NLeptons[idx_jecup][4], v_lepton_idx.size(), v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Lep1pt[idx_jecup][4] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Lep1eta[idx_jecup][4], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Lep1phi[idx_jecup][4], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Lep2pt[idx_jecup][4] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Lep2eta[idx_jecup][4], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Lep2phi[idx_jecup][4], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_NPV[idx_jecup][4]    , num_pv        , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_NJets[idx_jecup][4]  , v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Jet1pt[idx_jecup][4] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Jet1eta[idx_jecup][4], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Jet1phi[idx_jecup][4], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Jet2pt[idx_jecup][4] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Jet2eta[idx_jecup][4], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_Jet2phi[idx_jecup][4], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_metpt[idx_jecup][4] ,MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_metphi[idx_jecup][4],MetJESUp->Phi() , v_SystEvt[idx_jecup] );
-               
-               FillHisto( h_cf_sys_dilep_inv_mass[idx_jecup][4], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_metpt[idx_jecup][4] , Met->Pt() , v_SystEvt[idx_jecup] );
-               FillHisto( h_cf_sys_metphi[idx_jecup][4], Met->Phi(), v_SystEvt[idx_jecup] );
-               
-               FillHisto( h_sys_Num_PV[idx_jecup][4], num_pv, v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_DiLepMass[idx_jecup][4], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Lep1pt[idx_jecup][4] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Lep1eta[idx_jecup][4], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Lep1phi[idx_jecup][4], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Lep2pt[idx_jecup][4] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Lep2eta[idx_jecup][4], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Lep2phi[idx_jecup][4], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Jet1pt[idx_jecup][4] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Jet1eta[idx_jecup][4], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Jet1phi[idx_jecup][4], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Jet2pt[idx_jecup][4] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Jet2eta[idx_jecup][4], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Jet2phi[idx_jecup][4], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_Num_Jets[idx_jecup][4], v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_METpt[idx_jecup][4]   , MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-               FillHisto( h_sys_METphi[idx_jecup][4]  , MetJESUp->Phi()  , v_SystEvt[idx_jecup] );
-               
-               /// Apply BTagging Scale Factor for JES Up
-               //BTaggigSFApplyJESR("JetEnUp");
-               BTaggigSFApplyJESR(v_jetup_idx, v_jetup_TL, idx_jecup);
-               if ( BJetCut(v_bjetup_idx) == true ) // one or more b-tagging 
-               {
+                  //FillHisto( h_HT[5], AllJetpt, evt_weight_);
 
 
-                  FillHisto( h_cf_sys_NLeptons[idx_jecup][5], v_lepton_idx.size(), v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Lep1pt[idx_jecup][5] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Lep1eta[idx_jecup][5], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Lep1phi[idx_jecup][5], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Lep2pt[idx_jecup][5] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Lep2eta[idx_jecup][5], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Lep2phi[idx_jecup][5], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_NPV[idx_jecup][5]    , num_pv        , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_NJets[idx_jecup][5]  , v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Jet1pt[idx_jecup][5] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Jet1eta[idx_jecup][5], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Jet1phi[idx_jecup][5], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Jet2pt[idx_jecup][5] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Jet2eta[idx_jecup][5], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_Jet2phi[idx_jecup][5], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_metpt[idx_jecup][5] ,MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_metphi[idx_jecup][5],MetJESUp->Phi() , v_SystEvt[idx_jecup] );
-                  
-                  FillHisto( h_cf_sys_dilep_inv_mass[idx_jecup][5], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_metpt[idx_jecup][5] , MetJESUp->Pt() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_cf_sys_metphi[idx_jecup][5], MetJESUp->Phi(), v_SystEvt[idx_jecup] );
-                  
-                  FillHisto( h_sys_Num_PV[idx_jecup][5], num_pv, v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_DiLepMass[idx_jecup][5], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Lep1pt[idx_jecup][5] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Lep1eta[idx_jecup][5], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Lep1phi[idx_jecup][5], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Lep2pt[idx_jecup][5] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Lep2eta[idx_jecup][5], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Lep2phi[idx_jecup][5], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Jet1pt[idx_jecup][5] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Jet1eta[idx_jecup][5], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Jet1phi[idx_jecup][5], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Jet2pt[idx_jecup][5] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Jet2eta[idx_jecup][5], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Jet2phi[idx_jecup][5], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_Num_Jets[idx_jecup][5], v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_METpt[idx_jecup][5]   , MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-                  FillHisto( h_sys_METphi[idx_jecup][5]  , MetJESUp->Phi()  , v_SystEvt[idx_jecup] );
+               } /// Step 5///
+            } /// Step 4 ///
+         }/// Step 3 ///
 
-                  ///////////////////////////////////////
-                  /// 2 or More B-Tagging Requriement ///
-                  /////////////////////////////////////// 
-                  if ( DoubleBtag(v_bjetup_idx) == true )
-                  {
-
-                     FillHisto( h_cf_sys_NLeptons[idx_jecup][6], v_lepton_idx.size(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jecup][6] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jecup][6], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jecup][6], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jecup][6] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jecup][6], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jecup][6], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_NPV[idx_jecup][6]    , num_pv        , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_NJets[idx_jecup][6]  , v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jecup][6] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jecup][6], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jecup][6], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jecup][6] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jecup][6], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jecup][6], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metpt[idx_jecup][6] ,MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metphi[idx_jecup][6],MetJESUp->Phi() , v_SystEvt[idx_jecup] );
-                     
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jecup][6], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metpt[idx_jecup][6] , MetJESUp->Pt() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metphi[idx_jecup][6], MetJESUp->Phi(), v_SystEvt[idx_jecup] );
-                     
-                     FillHisto( h_sys_Num_PV[idx_jecup][6], num_pv, v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_DiLepMass[idx_jecup][6], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep1pt[idx_jecup][6] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep1eta[idx_jecup][6], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep1phi[idx_jecup][6], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep2pt[idx_jecup][6] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep2eta[idx_jecup][6], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep2phi[idx_jecup][6], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet1pt[idx_jecup][6] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet1eta[idx_jecup][6], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet1phi[idx_jecup][6], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet2pt[idx_jecup][6] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet2eta[idx_jecup][6], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet2phi[idx_jecup][6], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Num_Jets[idx_jecup][6], v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_METpt[idx_jecup][6]   , MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_METphi[idx_jecup][6]  , MetJESUp->Phi()  , v_SystEvt[idx_jecup] );
-
-                  }//// JES Up  2 or more b-tagging  
-                  ////
-                  
-                  if (v_bjetup_idx.size() ==2)// exactly 2b-tagging ..
-                  {
-
-
-                     FillHisto( h_cf_sys_NLeptons[idx_jecup][7], v_lepton_idx.size(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jecup][7] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jecup][7], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jecup][7], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jecup][7] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jecup][7], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jecup][7], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_NPV[idx_jecup][7]    , num_pv        , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_NJets[idx_jecup][7]  , v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jecup][7] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jecup][7], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jecup][7], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jecup][7] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jecup][7], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jecup][7], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metpt[idx_jecup][7] ,MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metphi[idx_jecup][7],MetJESUp->Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jecup][7], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metpt[idx_jecup][7] , MetJESUp->Pt() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metphi[idx_jecup][7], MetJESUp->Phi(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Num_PV[idx_jecup][7], num_pv, v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_DiLepMass[idx_jecup][7], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep1pt[idx_jecup][7] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep1eta[idx_jecup][7], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep1phi[idx_jecup][7], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep2pt[idx_jecup][7] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep2eta[idx_jecup][7], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep2phi[idx_jecup][7], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet1pt[idx_jecup][7] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet1eta[idx_jecup][7], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet1phi[idx_jecup][7], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet2pt[idx_jecup][7] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet2eta[idx_jecup][7], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet2phi[idx_jecup][7], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Num_Jets[idx_jecup][7], v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_METpt[idx_jecup][7]   , MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_METphi[idx_jecup][7]  , MetJESUp->Phi()  , v_SystEvt[idx_jecup] );
-                  }// JES Up  exactly 2b-tagging ..
-                  /// Top Reconstruction for JES Up 
-                  //KinSolSys(Lep,AnLep,bJet1Up,bJet2Up,MetJESUp,"JetEnUp");
-                  SetUpKINObsSyst(v_jetup_idx, v_jetup_TL ,MetJESUp);
-                  //if ( ksolweight_ != -1 )
-                  if (isKinSol)
-                  {
-                     if ( Top->Pt() > AnTop->Pt() ) { (*Top1) = (*Top); (*Top2) = (*AnTop); }
-                     else { (*Top1) = (*AnTop); (*Top2) = (*Top); }
-                     FillHisto( h_cf_sys_NLeptons[idx_jecup][8], v_lepton_idx.size(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jecup][8] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jecup][8], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jecup][8], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jecup][8] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jecup][8], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jecup][8], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_NPV[idx_jecup][8]    , num_pv        , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_NJets[idx_jecup][8]  , v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jecup][8] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jecup][8], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jecup][8], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jecup][8] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jecup][8], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jecup][8], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metpt[idx_jecup][8] ,MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metphi[idx_jecup][8],MetJESUp->Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jecup][8], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metpt[idx_jecup][8] , MetJESUp->Pt() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_cf_sys_metphi[idx_jecup][8], MetJESUp->Phi(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Num_PV[idx_jecup][8], num_pv, v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_DiLepMass[idx_jecup][8], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep1pt[idx_jecup][8] , (*Lep1).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep1eta[idx_jecup][8], (*Lep1).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep1phi[idx_jecup][8], (*Lep1).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep2pt[idx_jecup][8] , (*Lep2).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep2eta[idx_jecup][8], (*Lep2).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Lep2phi[idx_jecup][8], (*Lep2).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet1pt[idx_jecup][8] , (*Jet1Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet1eta[idx_jecup][8], (*Jet1Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet1phi[idx_jecup][8], (*Jet1Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet2pt[idx_jecup][8] , (*Jet2Up).Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet2eta[idx_jecup][8], (*Jet2Up).Eta() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Jet2phi[idx_jecup][8], (*Jet2Up).Phi() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Num_Jets[idx_jecup][8], v_jetup_idx.size(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_METpt[idx_jecup][8]   , MetJESUp->Pt()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_METphi[idx_jecup][8]  , MetJESUp->Phi()  , v_SystEvt[idx_jecup] );
-
-                     FillHisto( h_sys_Top1Mass_[idx_jecup]    , Top1->M()        , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Top1pt_[idx_jecup]      , Top1->Pt()       , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Top1phi_[idx_jecup]     , Top1->Phi()      , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Top1Rapidity_[idx_jecup], Top1->Rapidity() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Top1Energy_[idx_jecup]  , Top1->Energy()   , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Top2Mass_[idx_jecup]    , Top2->M()        , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Top2pt_[idx_jecup]      , Top2->Pt()       , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Top2phi_[idx_jecup]     , Top2->Phi()      , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Top2Rapidity_[idx_jecup], Top2->Rapidity() , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Top2Energy_[idx_jecup]  , Top2->Energy()   , v_SystEvt[idx_jecup] );
-
-                     FillHisto( h_sys_TopMass_[idx_jecup]      , Top->M()         , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Toppt_[idx_jecup]        , Top->Pt()        , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_Topphi_[idx_jecup]       , Top->Phi()       , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_TopRapidity_[idx_jecup]  , Top->Rapidity()  , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_TopEnergy_[idx_jecup]    , Top->Energy()    , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_AnTopMass_[idx_jecup]    , AnTop->M()       , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_AnToppt_[idx_jecup]      , AnTop->Pt()      , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_AnTopphi_[idx_jecup]     , AnTop->Phi()     , v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_AnTopRapidity_[idx_jecup], AnTop->Rapidity(), v_SystEvt[idx_jecup] );
-                     FillHisto( h_sys_AnTopEnergy_[idx_jecup]  , AnTop->Energy()  , v_SystEvt[idx_jecup] );
-
-
-
-                     v_recocp_O.clear();
-                     v_recocp_O.push_back( ssbcpviol->getO1Vari( Top, AnTop, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO2Vari( Top, AnTop, bJet, AnbJet ) );
-                     v_recocp_O.push_back( ssbcpviol->getO3Vari( bJet, AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO4Vari( AnbJet, bJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO5Vari( bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO6Vari( bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO7Vari( Top , AnTop, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO8Vari( Top, AnTop, bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO9Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO10Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO11Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO12Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO13Vari( bJet , AnbJet, AnLep, Lep )  );
-                     
-                     for (int j = 0; j < v_recocp_O.size(); ++ j )
-                     {
-                        FillHisto( h_sys_Reco_CPO_[idx_jecup][j], v_recocp_O[j] , v_SystEvt[idx_jecup]   );
-                        FillHisto( h_sys_Reco_CPO_ReRange_[idx_jecup][j], v_recocp_O[j] , v_SystEvt[idx_jecup]  );
-                     }
-                  } // Kinmatic Solver //
-               }// JES Up  one or more b-tagging 
-            }// JES Up MET Cut   
-         } // JES Up Num Jet Cut
-         ////////////////
-         /// JES Down ///
-         ////////////////
-         if ( NumJetCut(v_jetdn_idx) == true && isAllSyst == true && idx_jecdn != -2) 
-         {
-
-
-            FillHisto( h_cf_sys_NLeptons[idx_jecdn][3], v_lepton_idx.size(), v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Lep1pt[idx_jecdn][3] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Lep1eta[idx_jecdn][3], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Lep1phi[idx_jecdn][3], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Lep2pt[idx_jecdn][3] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Lep2eta[idx_jecdn][3], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Lep2phi[idx_jecdn][3], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_NPV[idx_jecdn][3]    , num_pv        , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_NJets[idx_jecdn][3]  , v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Jet1pt[idx_jecdn][3] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Jet1eta[idx_jecdn][3], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Jet1phi[idx_jecdn][3], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Jet2pt[idx_jecdn][3] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Jet2eta[idx_jecdn][3], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_Jet2phi[idx_jecdn][3], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_metpt[idx_jecdn][3] ,MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_metphi[idx_jecdn][3],MetJESDn->Phi() , v_SystEvt[idx_jecdn] );
-            
-            FillHisto( h_cf_sys_dilep_inv_mass[idx_jecdn][3], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_metpt[idx_jecdn][3] , MetJESDn->Pt() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_cf_sys_metphi[idx_jecdn][3], MetJESDn->Phi(), v_SystEvt[idx_jecdn] );
-            
-            FillHisto( h_sys_Num_PV[idx_jecdn][3], num_pv, v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_DiLepMass[idx_jecdn][3], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Lep1pt[idx_jecdn][3] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Lep1eta[idx_jecdn][3], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Lep1phi[idx_jecdn][3], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Lep2pt[idx_jecdn][3] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Lep2eta[idx_jecdn][3], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Lep2phi[idx_jecdn][3], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Jet1pt[idx_jecdn][3] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Jet1eta[idx_jecdn][3], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Jet1phi[idx_jecdn][3], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Jet2pt[idx_jecdn][3] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Jet2eta[idx_jecdn][3], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Jet2phi[idx_jecdn][3], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_Num_Jets[idx_jecdn][3], v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_METpt[idx_jecdn][3]   , MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-            FillHisto( h_sys_METphi[idx_jecdn][3]  , MetJESDn->Phi()  , v_SystEvt[idx_jecdn] );
-
-            if ( METCut(MetJESDn) == true )
-            {
-
-               FillHisto( h_cf_sys_NLeptons[idx_jecdn][4], v_lepton_idx.size(), v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Lep1pt[idx_jecdn][4] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Lep1eta[idx_jecdn][4], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Lep1phi[idx_jecdn][4], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Lep2pt[idx_jecdn][4] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Lep2eta[idx_jecdn][4], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Lep2phi[idx_jecdn][4], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_NPV[idx_jecdn][4]    , num_pv        , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_NJets[idx_jecdn][4]  , v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Jet1pt[idx_jecdn][4] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Jet1eta[idx_jecdn][4], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Jet1phi[idx_jecdn][4], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Jet2pt[idx_jecdn][4] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Jet2eta[idx_jecdn][4], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_Jet2phi[idx_jecdn][4], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_metpt[idx_jecdn][4] ,MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_metphi[idx_jecdn][4],MetJESDn->Phi() , v_SystEvt[idx_jecdn] );
-               
-               FillHisto( h_cf_sys_dilep_inv_mass[idx_jecdn][4], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_metpt[idx_jecdn][4] , Met->Pt() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_cf_sys_metphi[idx_jecdn][4], Met->Phi(), v_SystEvt[idx_jecdn] );
-               
-               FillHisto( h_sys_Num_PV[idx_jecdn][4], num_pv, v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_DiLepMass[idx_jecdn][4], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Lep1pt[idx_jecdn][4] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Lep1eta[idx_jecdn][4], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Lep1phi[idx_jecdn][4], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Lep2pt[idx_jecdn][4] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Lep2eta[idx_jecdn][4], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Lep2phi[idx_jecdn][4], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Jet1pt[idx_jecdn][4] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Jet1eta[idx_jecdn][4], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Jet1phi[idx_jecdn][4], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Jet2pt[idx_jecdn][4] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Jet2eta[idx_jecdn][4], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Jet2phi[idx_jecdn][4], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_Num_Jets[idx_jecdn][4], v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_METpt[idx_jecdn][4]   , MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-               FillHisto( h_sys_METphi[idx_jecdn][4]  , MetJESDn->Phi()  , v_SystEvt[idx_jecdn] );
-               /// Apply BTagging Scale Factor for JES Dn
-               //BTaggigSFApplyJESR("JetEnDown");
-               BTaggigSFApplyJESR(v_jetdn_idx, v_jetdn_TL, idx_jecdn);
-               if ( BJetCut(v_bjetdn_idx) == true ) // one or more b-tagging 
-               {
-
-                  FillHisto( h_cf_sys_NLeptons[idx_jecdn][5], v_lepton_idx.size(), v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Lep1pt[idx_jecdn][5] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Lep1eta[idx_jecdn][5], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Lep1phi[idx_jecdn][5], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Lep2pt[idx_jecdn][5] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Lep2eta[idx_jecdn][5], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Lep2phi[idx_jecdn][5], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_NPV[idx_jecdn][5]    , num_pv        , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_NJets[idx_jecdn][5]  , v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Jet1pt[idx_jecdn][5] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Jet1eta[idx_jecdn][5], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Jet1phi[idx_jecdn][5], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Jet2pt[idx_jecdn][5] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Jet2eta[idx_jecdn][5], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_Jet2phi[idx_jecdn][5], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_metpt[idx_jecdn][5] ,MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_metphi[idx_jecdn][5],MetJESDn->Phi() , v_SystEvt[idx_jecdn] );
-                  
-                  FillHisto( h_cf_sys_dilep_inv_mass[idx_jecdn][5], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_metpt[idx_jecdn][5] , MetJESDn->Pt() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_cf_sys_metphi[idx_jecdn][5], MetJESDn->Phi(), v_SystEvt[idx_jecdn] );
-                  
-                  FillHisto( h_sys_Num_PV[idx_jecdn][5], num_pv, v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_DiLepMass[idx_jecdn][5], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Lep1pt[idx_jecdn][5] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Lep1eta[idx_jecdn][5], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Lep1phi[idx_jecdn][5], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Lep2pt[idx_jecdn][5] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Lep2eta[idx_jecdn][5], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Lep2phi[idx_jecdn][5], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Jet1pt[idx_jecdn][5] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Jet1eta[idx_jecdn][5], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Jet1phi[idx_jecdn][5], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Jet2pt[idx_jecdn][5] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Jet2eta[idx_jecdn][5], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Jet2phi[idx_jecdn][5], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_Num_Jets[idx_jecdn][5], v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_METpt[idx_jecdn][5]   , MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-                  FillHisto( h_sys_METphi[idx_jecdn][5]  , MetJESDn->Phi()  , v_SystEvt[idx_jecdn] );
-                  ///////////////////////////////////////
-                  /// 2 or More B-Tagging Requriement ///
-                  /////////////////////////////////////// 
-                  if ( DoubleBtag(v_bjetdn_idx) == true )
-                  {
-                     FillHisto( h_cf_sys_NLeptons[idx_jecdn][6], v_lepton_idx.size(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jecdn][6] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jecdn][6], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jecdn][6], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jecdn][6] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jecdn][6], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jecdn][6], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_NPV[idx_jecdn][6]    , num_pv        , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_NJets[idx_jecdn][6]  , v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jecdn][6] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jecdn][6], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jecdn][6], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jecdn][6] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jecdn][6], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jecdn][6], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jecdn][6] ,MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jecdn][6],MetJESDn->Phi() , v_SystEvt[idx_jecdn] );
-                     
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jecdn][6], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jecdn][6] , MetJESDn->Pt() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jecdn][6], MetJESDn->Phi(), v_SystEvt[idx_jecdn] );
-                     
-                     FillHisto( h_sys_Num_PV[idx_jecdn][6], num_pv, v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_DiLepMass[idx_jecdn][6], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep1pt[idx_jecdn][6] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep1eta[idx_jecdn][6], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep1phi[idx_jecdn][6], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep2pt[idx_jecdn][6] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep2eta[idx_jecdn][6], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep2phi[idx_jecdn][6], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet1pt[idx_jecdn][6] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet1eta[idx_jecdn][6], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet1phi[idx_jecdn][6], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet2pt[idx_jecdn][6] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet2eta[idx_jecdn][6], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet2phi[idx_jecdn][6], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Num_Jets[idx_jecdn][6], v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_METpt[idx_jecdn][6]   , MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_METphi[idx_jecdn][6]  , MetJESDn->Phi()  , v_SystEvt[idx_jecdn] );
-
-                  }//// JES Down  2 or more b-tagging  
-                  if (v_bjetdn_idx.size() ==2)// exactly 2b-tagging ..
-                  {
-
-                     FillHisto( h_cf_sys_NLeptons[idx_jecdn][7], v_lepton_idx.size(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jecdn][7] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jecdn][7], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jecdn][7], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jecdn][7] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jecdn][7], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jecdn][7], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_NPV[idx_jecdn][7]    , num_pv        , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_NJets[idx_jecdn][7]  , v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jecdn][7] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jecdn][7], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jecdn][7], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jecdn][7] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jecdn][7], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jecdn][7], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jecdn][7] ,MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jecdn][7],MetJESDn->Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jecdn][7], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jecdn][7] , MetJESDn->Pt() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jecdn][7], MetJESDn->Phi(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Num_PV[idx_jecdn][7], num_pv, v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_DiLepMass[idx_jecdn][7], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep1pt[idx_jecdn][7] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep1eta[idx_jecdn][7], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep1phi[idx_jecdn][7], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep2pt[idx_jecdn][7] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep2eta[idx_jecdn][7], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep2phi[idx_jecdn][7], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet1pt[idx_jecdn][7] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet1eta[idx_jecdn][7], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet1phi[idx_jecdn][7], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet2pt[idx_jecdn][7] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet2eta[idx_jecdn][7], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet2phi[idx_jecdn][7], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Num_Jets[idx_jecdn][7], v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_METpt[idx_jecdn][7]   , MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_METphi[idx_jecdn][7]  , MetJESDn->Phi()  , v_SystEvt[idx_jecdn] );
-                  }// JES Dn  exactly 2b-tagging ..
-               
-                  /// Top Reconstruction for JES Down 
-                  //KinSolSys(Lep,AnLep,bJet1Dn,bJet2Dn,MetJESDn,"JetEnDown");
-                  SetUpKINObsSyst(v_jetdn_idx, v_jetdn_TL ,MetJESDn);
-                  //if ( ksolweight_ != -1 )
-                  if ( isKinSol )
-                  {
-                     if ( Top->Pt() > AnTop->Pt() ) { (*Top1) = (*Top); (*Top2) = (*AnTop); }
-                     else { (*Top1) = (*AnTop); (*Top2) = (*Top); }
-
-
-                     FillHisto( h_cf_sys_NLeptons[idx_jecdn][8], v_lepton_idx.size(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jecdn][8] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jecdn][8], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jecdn][8], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jecdn][8] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jecdn][8], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jecdn][8], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_NPV[idx_jecdn][8]    , num_pv        , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_NJets[idx_jecdn][8]  , v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jecdn][8] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jecdn][8], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jecdn][8], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jecdn][8] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jecdn][8], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jecdn][8], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jecdn][8] ,MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jecdn][8],MetJESDn->Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jecdn][8], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jecdn][8] , MetJESDn->Pt() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jecdn][8], MetJESDn->Phi(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Num_PV[idx_jecdn][8], num_pv, v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_DiLepMass[idx_jecdn][8], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep1pt[idx_jecdn][8] , (*Lep1).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep1eta[idx_jecdn][8], (*Lep1).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep1phi[idx_jecdn][8], (*Lep1).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep2pt[idx_jecdn][8] , (*Lep2).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep2eta[idx_jecdn][8], (*Lep2).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Lep2phi[idx_jecdn][8], (*Lep2).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet1pt[idx_jecdn][8] , (*Jet1Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet1eta[idx_jecdn][8], (*Jet1Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet1phi[idx_jecdn][8], (*Jet1Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet2pt[idx_jecdn][8] , (*Jet2Dn).Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet2eta[idx_jecdn][8], (*Jet2Dn).Eta() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Jet2phi[idx_jecdn][8], (*Jet2Dn).Phi() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Num_Jets[idx_jecdn][8], v_jetdn_idx.size(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_METpt[idx_jecdn][8]   , MetJESDn->Pt()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_METphi[idx_jecdn][8]  , MetJESDn->Phi()  , v_SystEvt[idx_jecdn] );
-
-                     FillHisto( h_sys_Top1Mass_[idx_jecdn]    , Top1->M()        , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Top1pt_[idx_jecdn]      , Top1->Pt()       , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Top1phi_[idx_jecdn]     , Top1->Phi()      , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Top1Rapidity_[idx_jecdn], Top1->Rapidity() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Top1Energy_[idx_jecdn]  , Top1->Energy()   , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Top2Mass_[idx_jecdn]    , Top2->M()        , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Top2pt_[idx_jecdn]      , Top2->Pt()       , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Top2phi_[idx_jecdn]     , Top2->Phi()      , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Top2Rapidity_[idx_jecdn], Top2->Rapidity() , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Top2Energy_[idx_jecdn]  , Top2->Energy()   , v_SystEvt[idx_jecdn] );
-
-                     FillHisto( h_sys_TopMass_[idx_jecdn]      , Top->M()         , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Toppt_[idx_jecdn]        , Top->Pt()        , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_Topphi_[idx_jecdn]       , Top->Phi()       , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_TopRapidity_[idx_jecdn]  , Top->Rapidity()  , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_TopEnergy_[idx_jecdn]    , Top->Energy()    , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_AnTopMass_[idx_jecdn]    , AnTop->M()       , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_AnToppt_[idx_jecdn]      , AnTop->Pt()      , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_AnTopphi_[idx_jecdn]     , AnTop->Phi()     , v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_AnTopRapidity_[idx_jecdn], AnTop->Rapidity(), v_SystEvt[idx_jecdn] );
-                     FillHisto( h_sys_AnTopEnergy_[idx_jecdn]  , AnTop->Energy()  , v_SystEvt[idx_jecdn] );
-
-                     v_recocp_O.clear();
-                     v_recocp_O.push_back( ssbcpviol->getO1Vari( Top, AnTop, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO2Vari( Top, AnTop, bJet, AnbJet ) );
-                     v_recocp_O.push_back( ssbcpviol->getO3Vari( bJet, AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO4Vari( AnbJet, bJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO5Vari( bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO6Vari( bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO7Vari( Top , AnTop, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO8Vari( Top, AnTop, bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO9Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO10Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO11Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO12Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO13Vari( bJet , AnbJet, AnLep, Lep )  );
-                     for (int j = 0; j < v_recocp_O.size(); ++ j )
-                     {
-                        FillHisto( h_sys_Reco_CPO_[idx_jecdn][j], v_recocp_O[j] , v_SystEvt[idx_jecdn]   );
-                        FillHisto( h_sys_Reco_CPO_ReRange_[idx_jecdn][j], v_recocp_O[j] , v_SystEvt[idx_jecdn]  );
-                     }
-                  } // Kinmatic Solver //
-               }// Num bJet Cut // one or more b-tagging //
-            } // JES Down MET Cut // 
-         } // JES Down Num Jet Cut 
-
-         ///////////////////////////////
-         /// JER Up Systematic Study ///
-         ///////////////////////////////
-         if ( NumJetCut(v_jetresup_idx) == true && isAllSyst == true && idx_jerup != -2 ) 
-         {
-
-
-            FillHisto( h_cf_sys_NLeptons[idx_jerup][3], v_lepton_idx.size(), v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Lep1pt[idx_jerup][3] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Lep1eta[idx_jerup][3], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Lep1phi[idx_jerup][3], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Lep2pt[idx_jerup][3] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Lep2eta[idx_jerup][3], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Lep2phi[idx_jerup][3], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_NPV[idx_jerup][3]    , num_pv        , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_NJets[idx_jerup][3]  , v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Jet1pt[idx_jerup][3] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Jet1eta[idx_jerup][3], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Jet1phi[idx_jerup][3], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Jet2pt[idx_jerup][3] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Jet2eta[idx_jerup][3], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_Jet2phi[idx_jerup][3], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_metpt[idx_jerup][3] ,MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_metphi[idx_jerup][3],MetJERUp->Phi() , v_SystEvt[idx_jerup] );
-            
-            FillHisto( h_cf_sys_dilep_inv_mass[idx_jerup][3], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_metpt[idx_jerup][3] , MetJERUp->Pt() , v_SystEvt[idx_jerup] );
-            FillHisto( h_cf_sys_metphi[idx_jerup][3], MetJERUp->Phi(), v_SystEvt[idx_jerup] );
-            
-            FillHisto( h_sys_Num_PV[idx_jerup][3], num_pv, v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_DiLepMass[idx_jerup][3], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Lep1pt[idx_jerup][3] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Lep1eta[idx_jerup][3], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Lep1phi[idx_jerup][3], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Lep2pt[idx_jerup][3] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Lep2eta[idx_jerup][3], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Lep2phi[idx_jerup][3], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Jet1pt[idx_jerup][3] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Jet1eta[idx_jerup][3], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Jet1phi[idx_jerup][3], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Jet2pt[idx_jerup][3] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Jet2eta[idx_jerup][3], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Jet2phi[idx_jerup][3], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_Num_Jets[idx_jerup][3], v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_METpt[idx_jerup][3]   , MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-            FillHisto( h_sys_METphi[idx_jerup][3]  , MetJERUp->Phi()  , v_SystEvt[idx_jerup] );
-            if ( METCut(MetJERUp) == true ) 
-            {
-
-
-               FillHisto( h_cf_sys_NLeptons[idx_jerup][4], v_lepton_idx.size(), v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Lep1pt[idx_jerup][4] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Lep1eta[idx_jerup][4], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Lep1phi[idx_jerup][4], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Lep2pt[idx_jerup][4] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Lep2eta[idx_jerup][4], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Lep2phi[idx_jerup][4], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_NPV[idx_jerup][4]    , num_pv        , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_NJets[idx_jerup][4]  , v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Jet1pt[idx_jerup][4] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Jet1eta[idx_jerup][4], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Jet1phi[idx_jerup][4], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Jet2pt[idx_jerup][4] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Jet2eta[idx_jerup][4], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_Jet2phi[idx_jerup][4], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_metpt[idx_jerup][4] ,MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_metphi[idx_jerup][4],MetJERUp->Phi() , v_SystEvt[idx_jerup] );
-               
-               FillHisto( h_cf_sys_dilep_inv_mass[idx_jerup][4], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_metpt[idx_jerup][4] , Met->Pt() , v_SystEvt[idx_jerup] );
-               FillHisto( h_cf_sys_metphi[idx_jerup][4], Met->Phi(), v_SystEvt[idx_jerup] );
-               
-               FillHisto( h_sys_Num_PV[idx_jerup][4], num_pv, v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_DiLepMass[idx_jerup][4], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Lep1pt[idx_jerup][4] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Lep1eta[idx_jerup][4], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Lep1phi[idx_jerup][4], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Lep2pt[idx_jerup][4] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Lep2eta[idx_jerup][4], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Lep2phi[idx_jerup][4], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Jet1pt[idx_jerup][4] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Jet1eta[idx_jerup][4], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Jet1phi[idx_jerup][4], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Jet2pt[idx_jerup][4] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Jet2eta[idx_jerup][4], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Jet2phi[idx_jerup][4], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_Num_Jets[idx_jerup][4], v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_METpt[idx_jerup][4]   , MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-               FillHisto( h_sys_METphi[idx_jerup][4]  , MetJERUp->Phi()  , v_SystEvt[idx_jerup] );
-               
-               /// Apply BTagging Scale Factor for JER Up
-               //BTaggigSFApplyJESR("JetEnUp");
-               BTaggigSFApplyJESR(v_jetresup_idx, v_jetresup_TL, idx_jerup);
-               if ( BJetCut(v_bjetresup_idx) == true ) // one or more b-tagging 
-               {
-
-
-                  FillHisto( h_cf_sys_NLeptons[idx_jerup][5], v_lepton_idx.size(), v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Lep1pt[idx_jerup][5] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Lep1eta[idx_jerup][5], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Lep1phi[idx_jerup][5], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Lep2pt[idx_jerup][5] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Lep2eta[idx_jerup][5], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Lep2phi[idx_jerup][5], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_NPV[idx_jerup][5]    , num_pv        , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_NJets[idx_jerup][5]  , v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Jet1pt[idx_jerup][5] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Jet1eta[idx_jerup][5], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Jet1phi[idx_jerup][5], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Jet2pt[idx_jerup][5] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Jet2eta[idx_jerup][5], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_Jet2phi[idx_jerup][5], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_metpt[idx_jerup][5] ,MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_metphi[idx_jerup][5],MetJERUp->Phi() , v_SystEvt[idx_jerup] );
-                  
-                  FillHisto( h_cf_sys_dilep_inv_mass[idx_jerup][5], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_metpt[idx_jerup][5] , MetJERUp->Pt() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_cf_sys_metphi[idx_jerup][5], MetJERUp->Phi(), v_SystEvt[idx_jerup] );
-                  
-                  FillHisto( h_sys_Num_PV[idx_jerup][5], num_pv, v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_DiLepMass[idx_jerup][5], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Lep1pt[idx_jerup][5] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Lep1eta[idx_jerup][5], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Lep1phi[idx_jerup][5], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Lep2pt[idx_jerup][5] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Lep2eta[idx_jerup][5], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Lep2phi[idx_jerup][5], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Jet1pt[idx_jerup][5] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Jet1eta[idx_jerup][5], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Jet1phi[idx_jerup][5], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Jet2pt[idx_jerup][5] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Jet2eta[idx_jerup][5], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Jet2phi[idx_jerup][5], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_Num_Jets[idx_jerup][5], v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_METpt[idx_jerup][5]   , MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-                  FillHisto( h_sys_METphi[idx_jerup][5]  , MetJERUp->Phi()  , v_SystEvt[idx_jerup] );
-
-                  ///////////////////////////////////////
-                  /// 2 or More B-Tagging Requriement ///
-                  /////////////////////////////////////// 
-                  if ( DoubleBtag(v_bjetresup_idx) == true )
-                  {
-
-                     FillHisto( h_cf_sys_NLeptons[idx_jerup][6], v_lepton_idx.size(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jerup][6] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jerup][6], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jerup][6], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jerup][6] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jerup][6], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jerup][6], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_NPV[idx_jerup][6]    , num_pv        , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_NJets[idx_jerup][6]  , v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jerup][6] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jerup][6], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jerup][6], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jerup][6] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jerup][6], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jerup][6], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metpt[idx_jerup][6] ,MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metphi[idx_jerup][6],MetJERUp->Phi() , v_SystEvt[idx_jerup] );
-                     
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jerup][6], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metpt[idx_jerup][6] , MetJERUp->Pt() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metphi[idx_jerup][6], MetJERUp->Phi(), v_SystEvt[idx_jerup] );
-                     
-                     FillHisto( h_sys_Num_PV[idx_jerup][6], num_pv, v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_DiLepMass[idx_jerup][6], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep1pt[idx_jerup][6] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep1eta[idx_jerup][6], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep1phi[idx_jerup][6], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep2pt[idx_jerup][6] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep2eta[idx_jerup][6], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep2phi[idx_jerup][6], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet1pt[idx_jerup][6] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet1eta[idx_jerup][6], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet1phi[idx_jerup][6], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet2pt[idx_jerup][6] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet2eta[idx_jerup][6], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet2phi[idx_jerup][6], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Num_Jets[idx_jerup][6], v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_METpt[idx_jerup][6]   , MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_METphi[idx_jerup][6]  , MetJERUp->Phi()  , v_SystEvt[idx_jerup] );
-
-                  }//// JER Up  2 or more b-tagging  
-                  ////
-                  
-                  if (v_bjetresup_idx.size() ==2)// exactly 2b-tagging ..
-                  {
-                     FillHisto( h_cf_sys_NLeptons[idx_jerup][7], v_lepton_idx.size(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jerup][7] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jerup][7], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jerup][7], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jerup][7] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jerup][7], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jerup][7], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_NPV[idx_jerup][7]    , num_pv        , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_NJets[idx_jerup][7]  , v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jerup][7] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jerup][7], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jerup][7], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jerup][7] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jerup][7], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jerup][7], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metpt[idx_jerup][7] ,MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metphi[idx_jerup][7],MetJERUp->Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jerup][7], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metpt[idx_jerup][7] , MetJERUp->Pt() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metphi[idx_jerup][7], MetJERUp->Phi(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Num_PV[idx_jerup][7], num_pv, v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_DiLepMass[idx_jerup][7], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep1pt[idx_jerup][7] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep1eta[idx_jerup][7], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep1phi[idx_jerup][7], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep2pt[idx_jerup][7] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep2eta[idx_jerup][7], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep2phi[idx_jerup][7], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet1pt[idx_jerup][7] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet1eta[idx_jerup][7], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet1phi[idx_jerup][7], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet2pt[idx_jerup][7] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet2eta[idx_jerup][7], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet2phi[idx_jerup][7], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Num_Jets[idx_jerup][7], v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_METpt[idx_jerup][7]   , MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_METphi[idx_jerup][7]  , MetJERUp->Phi()  , v_SystEvt[idx_jerup] );
-                  }// JER Up  exactly 2b-tagging ..
-                  /// Top Reconstruction for JER Up 
-                  //KinSolSys(Lep,AnLep,bJet1JERUp,bJet2JERUp,MetJERUp,"JetResUp");
-                  SetUpKINObsSyst(v_jetresup_idx, v_jetresup_TL ,MetJERUp);
-                  //if ( ksolweight_ != -1 )
-                  if ( isKinSol )
-                  {
-                     if ( Top->Pt() > AnTop->Pt() ) { (*Top1) = (*Top); (*Top2) = (*AnTop); }
-                     else { (*Top1) = (*AnTop); (*Top2) = (*Top); }
-
-                     FillHisto( h_cf_sys_NLeptons[idx_jerup][8], v_lepton_idx.size(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jerup][8] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jerup][8], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jerup][8], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jerup][8] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jerup][8], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jerup][8], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_NPV[idx_jerup][8]    , num_pv        , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_NJets[idx_jerup][8]  , v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jerup][8] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jerup][8], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jerup][8], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jerup][8] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jerup][8], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jerup][8], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metpt[idx_jerup][8] ,MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metphi[idx_jerup][8],MetJERUp->Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jerup][8], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metpt[idx_jerup][8] , MetJERUp->Pt() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_cf_sys_metphi[idx_jerup][8], MetJERUp->Phi(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Num_PV[idx_jerup][8], num_pv, v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_DiLepMass[idx_jerup][8], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep1pt[idx_jerup][8] , (*Lep1).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep1eta[idx_jerup][8], (*Lep1).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep1phi[idx_jerup][8], (*Lep1).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep2pt[idx_jerup][8] , (*Lep2).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep2eta[idx_jerup][8], (*Lep2).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Lep2phi[idx_jerup][8], (*Lep2).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet1pt[idx_jerup][8] , (*Jet1JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet1eta[idx_jerup][8], (*Jet1JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet1phi[idx_jerup][8], (*Jet1JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet2pt[idx_jerup][8] , (*Jet2JERUp).Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet2eta[idx_jerup][8], (*Jet2JERUp).Eta() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Jet2phi[idx_jerup][8], (*Jet2JERUp).Phi() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Num_Jets[idx_jerup][8], v_jetresup_idx.size(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_METpt[idx_jerup][8]   , MetJERUp->Pt()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_METphi[idx_jerup][8]  , MetJERUp->Phi()  , v_SystEvt[idx_jerup] );
-
-                     FillHisto( h_sys_Top1Mass_[idx_jerup]    , Top1->M()        , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Top1pt_[idx_jerup]      , Top1->Pt()       , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Top1phi_[idx_jerup]     , Top1->Phi()      , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Top1Rapidity_[idx_jerup], Top1->Rapidity() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Top1Energy_[idx_jerup]  , Top1->Energy()   , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Top2Mass_[idx_jerup]    , Top2->M()        , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Top2pt_[idx_jerup]      , Top2->Pt()       , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Top2phi_[idx_jerup]     , Top2->Phi()      , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Top2Rapidity_[idx_jerup], Top2->Rapidity() , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Top2Energy_[idx_jerup]  , Top2->Energy()   , v_SystEvt[idx_jerup] );
-
-                     FillHisto( h_sys_TopMass_[idx_jerup]      , Top->M()         , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Toppt_[idx_jerup]        , Top->Pt()        , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_Topphi_[idx_jerup]       , Top->Phi()       , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_TopRapidity_[idx_jerup]  , Top->Rapidity()  , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_TopEnergy_[idx_jerup]    , Top->Energy()    , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_AnTopMass_[idx_jerup]    , AnTop->M()       , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_AnToppt_[idx_jerup]      , AnTop->Pt()      , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_AnTopphi_[idx_jerup]     , AnTop->Phi()     , v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_AnTopRapidity_[idx_jerup], AnTop->Rapidity(), v_SystEvt[idx_jerup] );
-                     FillHisto( h_sys_AnTopEnergy_[idx_jerup]  , AnTop->Energy()  , v_SystEvt[idx_jerup] );
-
-                     v_recocp_O.clear();
-                     v_recocp_O.push_back( ssbcpviol->getO1Vari( Top, AnTop, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO2Vari( Top, AnTop, bJet, AnbJet ) );
-                     v_recocp_O.push_back( ssbcpviol->getO3Vari( bJet, AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO4Vari( AnbJet, bJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO5Vari( bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO6Vari( bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO7Vari( Top , AnTop, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO8Vari( Top, AnTop, bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO9Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO10Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO11Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO12Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO13Vari( bJet , AnbJet, AnLep, Lep )  );
-                     
-                     for (int j = 0; j < v_recocp_O.size(); ++ j )
-                     {
-                        FillHisto( h_sys_Reco_CPO_[idx_jerup][j], v_recocp_O[j] , v_SystEvt[idx_jerup]   );
-                        FillHisto( h_sys_Reco_CPO_ReRange_[idx_jerup][j], v_recocp_O[j] , v_SystEvt[idx_jerup]  );
-                     }
-                  } // Kinmatic Solver //
-               }// JER Up  one or more b-tagging 
-            }// JER Up MET Cut   
-         } // JER Up Num Jet Cut
-         if ( NumJetCut(v_jetresdn_idx) == true && isAllSyst == true && idx_jerdn != -2) 
-         {
-            FillHisto( h_cf_sys_NLeptons[idx_jerdn][3], v_lepton_idx.size(), v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Lep1pt[idx_jerdn][3] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Lep1eta[idx_jerdn][3], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Lep1phi[idx_jerdn][3], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Lep2pt[idx_jerdn][3] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Lep2eta[idx_jerdn][3], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Lep2phi[idx_jerdn][3], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_NPV[idx_jerdn][3]    , num_pv        , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_NJets[idx_jerdn][3]  , v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Jet1pt[idx_jerdn][3] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Jet1eta[idx_jerdn][3], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Jet1phi[idx_jerdn][3], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Jet2pt[idx_jerdn][3] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Jet2eta[idx_jerdn][3], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_Jet2phi[idx_jerdn][3], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_metpt[idx_jerdn][3] ,MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_metphi[idx_jerdn][3],MetJERDn->Phi() , v_SystEvt[idx_jerdn] );
-            
-            FillHisto( h_cf_sys_dilep_inv_mass[idx_jerdn][3], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_metpt[idx_jerdn][3] , MetJERDn->Pt() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_cf_sys_metphi[idx_jerdn][3], MetJERDn->Phi(), v_SystEvt[idx_jerdn] );
-            
-            FillHisto( h_sys_Num_PV[idx_jerdn][3], num_pv, v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_DiLepMass[idx_jerdn][3], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Lep1pt[idx_jerdn][3] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Lep1eta[idx_jerdn][3], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Lep1phi[idx_jerdn][3], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Lep2pt[idx_jerdn][3] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Lep2eta[idx_jerdn][3], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Lep2phi[idx_jerdn][3], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Jet1pt[idx_jerdn][3] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Jet1eta[idx_jerdn][3], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Jet1phi[idx_jerdn][3], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Jet2pt[idx_jerdn][3] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Jet2eta[idx_jerdn][3], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Jet2phi[idx_jerdn][3], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_Num_Jets[idx_jerdn][3], v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_METpt[idx_jerdn][3]   , MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-            FillHisto( h_sys_METphi[idx_jerdn][3]  , MetJERDn->Phi()  , v_SystEvt[idx_jerdn] );
-
-            if ( METCut(MetJERDn) == true )
-            {
-               FillHisto( h_cf_sys_NLeptons[idx_jerdn][4], v_lepton_idx.size(), v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Lep1pt[idx_jerdn][4] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Lep1eta[idx_jerdn][4], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Lep1phi[idx_jerdn][4], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Lep2pt[idx_jerdn][4] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Lep2eta[idx_jerdn][4], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Lep2phi[idx_jerdn][4], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_NPV[idx_jerdn][4]    , num_pv        , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_NJets[idx_jerdn][4]  , v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Jet1pt[idx_jerdn][4] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Jet1eta[idx_jerdn][4], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Jet1phi[idx_jerdn][4], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Jet2pt[idx_jerdn][4] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Jet2eta[idx_jerdn][4], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_Jet2phi[idx_jerdn][4], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_metpt[idx_jerdn][4] ,MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_metphi[idx_jerdn][4],MetJERDn->Phi() , v_SystEvt[idx_jerdn] );
-               
-               FillHisto( h_cf_sys_dilep_inv_mass[idx_jerdn][4], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_metpt[idx_jerdn][4] , Met->Pt() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_cf_sys_metphi[idx_jerdn][4], Met->Phi(), v_SystEvt[idx_jerdn] );
-               
-               FillHisto( h_sys_Num_PV[idx_jerdn][4], num_pv, v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_DiLepMass[idx_jerdn][4], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Lep1pt[idx_jerdn][4] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Lep1eta[idx_jerdn][4], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Lep1phi[idx_jerdn][4], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Lep2pt[idx_jerdn][4] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Lep2eta[idx_jerdn][4], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Lep2phi[idx_jerdn][4], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Jet1pt[idx_jerdn][4] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Jet1eta[idx_jerdn][4], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Jet1phi[idx_jerdn][4], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Jet2pt[idx_jerdn][4] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Jet2eta[idx_jerdn][4], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Jet2phi[idx_jerdn][4], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_Num_Jets[idx_jerdn][4], v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_METpt[idx_jerdn][4]   , MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-               FillHisto( h_sys_METphi[idx_jerdn][4]  , MetJERDn->Phi()  , v_SystEvt[idx_jerdn] );
-               /// Apply BTagging Scale Factor for JER Dn
-               BTaggigSFApplyJESR(v_jetresdn_idx, v_jetresdn_TL, idx_jerdn);
-               if ( BJetCut(v_bjetresdn_idx) == true ) // one or more b-tagging 
-               {
-                  FillHisto( h_cf_sys_NLeptons[idx_jerdn][5], v_lepton_idx.size(), v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Lep1pt[idx_jerdn][5] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Lep1eta[idx_jerdn][5], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Lep1phi[idx_jerdn][5], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Lep2pt[idx_jerdn][5] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Lep2eta[idx_jerdn][5], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Lep2phi[idx_jerdn][5], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_NPV[idx_jerdn][5]    , num_pv        , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_NJets[idx_jerdn][5]  , v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Jet1pt[idx_jerdn][5] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Jet1eta[idx_jerdn][5], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Jet1phi[idx_jerdn][5], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Jet2pt[idx_jerdn][5] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Jet2eta[idx_jerdn][5], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_Jet2phi[idx_jerdn][5], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_metpt[idx_jerdn][5] ,MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_metphi[idx_jerdn][5],MetJERDn->Phi() , v_SystEvt[idx_jerdn] );
-                  
-                  FillHisto( h_cf_sys_dilep_inv_mass[idx_jerdn][5], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_metpt[idx_jerdn][5] , MetJERDn->Pt() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_cf_sys_metphi[idx_jerdn][5], MetJERDn->Phi(), v_SystEvt[idx_jerdn] );
-                  
-                  FillHisto( h_sys_Num_PV[idx_jerdn][5], num_pv, v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_DiLepMass[idx_jerdn][5], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Lep1pt[idx_jerdn][5] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Lep1eta[idx_jerdn][5], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Lep1phi[idx_jerdn][5], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Lep2pt[idx_jerdn][5] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Lep2eta[idx_jerdn][5], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Lep2phi[idx_jerdn][5], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Jet1pt[idx_jerdn][5] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Jet1eta[idx_jerdn][5], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Jet1phi[idx_jerdn][5], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Jet2pt[idx_jerdn][5] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Jet2eta[idx_jerdn][5], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Jet2phi[idx_jerdn][5], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_Num_Jets[idx_jerdn][5], v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_METpt[idx_jerdn][5]   , MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-                  FillHisto( h_sys_METphi[idx_jerdn][5]  , MetJERDn->Phi()  , v_SystEvt[idx_jerdn] );
-                  ///////////////////////////////////////
-                  /// 2 or More B-Tagging Requriement ///
-                  /////////////////////////////////////// 
-                  if ( DoubleBtag(v_bjetresdn_idx) == true )
-                  {
-                     FillHisto( h_cf_sys_NLeptons[idx_jerdn][6], v_lepton_idx.size(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jerdn][6] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jerdn][6], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jerdn][6], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jerdn][6] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jerdn][6], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jerdn][6], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_NPV[idx_jerdn][6]    , num_pv        , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_NJets[idx_jerdn][6]  , v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jerdn][6] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jerdn][6], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jerdn][6], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jerdn][6] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jerdn][6], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jerdn][6], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jerdn][6] ,MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jerdn][6],MetJERDn->Phi() , v_SystEvt[idx_jerdn] );
-                     
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jerdn][6], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jerdn][6] , MetJERDn->Pt() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jerdn][6], MetJERDn->Phi(), v_SystEvt[idx_jerdn] );
-                     
-                     FillHisto( h_sys_Num_PV[idx_jerdn][6], num_pv, v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_DiLepMass[idx_jerdn][6], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep1pt[idx_jerdn][6] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep1eta[idx_jerdn][6], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep1phi[idx_jerdn][6], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep2pt[idx_jerdn][6] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep2eta[idx_jerdn][6], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep2phi[idx_jerdn][6], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet1pt[idx_jerdn][6] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet1eta[idx_jerdn][6], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet1phi[idx_jerdn][6], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet2pt[idx_jerdn][6] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet2eta[idx_jerdn][6], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet2phi[idx_jerdn][6], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Num_Jets[idx_jerdn][6], v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_METpt[idx_jerdn][6]   , MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_METphi[idx_jerdn][6]  , MetJERDn->Phi()  , v_SystEvt[idx_jerdn] );
-
-                  }//// JER Down  2 or more b-tagging  
-                  if (v_bjetresdn_idx.size() ==2)// exactly 2b-tagging ..
-                  {
-                     FillHisto( h_cf_sys_NLeptons[idx_jerdn][7], v_lepton_idx.size(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jerdn][7] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jerdn][7], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jerdn][7], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jerdn][7] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jerdn][7], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jerdn][7], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_NPV[idx_jerdn][7]    , num_pv        , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_NJets[idx_jerdn][7]  , v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jerdn][7] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jerdn][7], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jerdn][7], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jerdn][7] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jerdn][7], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jerdn][7], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jerdn][7] ,MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jerdn][7],MetJERDn->Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jerdn][7], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jerdn][7] , MetJERDn->Pt() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jerdn][7], MetJERDn->Phi(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Num_PV[idx_jerdn][7], num_pv, v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_DiLepMass[idx_jerdn][7], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep1pt[idx_jerdn][7] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep1eta[idx_jerdn][7], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep1phi[idx_jerdn][7], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep2pt[idx_jerdn][7] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep2eta[idx_jerdn][7], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep2phi[idx_jerdn][7], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet1pt[idx_jerdn][7] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet1eta[idx_jerdn][7], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet1phi[idx_jerdn][7], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet2pt[idx_jerdn][7] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet2eta[idx_jerdn][7], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet2phi[idx_jerdn][7], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Num_Jets[idx_jerdn][7], v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_METpt[idx_jerdn][7]   , MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_METphi[idx_jerdn][7]  , MetJERDn->Phi()  , v_SystEvt[idx_jerdn] );
-                  }// JER Dn  exactly 2b-tagging ..
-               
-                  /// Top Reconstruction for JER Down 
-                  //KinSolSys(Lep,AnLep,bJet1JERDn,bJet2JERDn,MetJERDn,"JetResDown");
-                  SetUpKINObsSyst(v_jetresdn_idx, v_jetresdn_TL ,MetJERDn);
-                  //if ( ksolweight_ != -1 )
-                  if ( isKinSol )
-                  {
-                     if ( Top->Pt() > AnTop->Pt() ) { (*Top1) = (*Top); (*Top2) = (*AnTop); }
-                     else { (*Top1) = (*AnTop); (*Top2) = (*Top); }
-                     FillHisto( h_cf_sys_NLeptons[idx_jerdn][8], v_lepton_idx.size(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep1pt[idx_jerdn][8] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep1eta[idx_jerdn][8], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep1phi[idx_jerdn][8], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep2pt[idx_jerdn][8] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep2eta[idx_jerdn][8], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Lep2phi[idx_jerdn][8], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_NPV[idx_jerdn][8]    , num_pv        , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_NJets[idx_jerdn][8]  , v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet1pt[idx_jerdn][8] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet1eta[idx_jerdn][8], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet1phi[idx_jerdn][8], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet2pt[idx_jerdn][8] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet2eta[idx_jerdn][8], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_Jet2phi[idx_jerdn][8], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jerdn][8] ,MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jerdn][8],MetJERDn->Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_dilep_inv_mass[idx_jerdn][8], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metpt[idx_jerdn][8] , MetJERDn->Pt() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_cf_sys_metphi[idx_jerdn][8], MetJERDn->Phi(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Num_PV[idx_jerdn][8], num_pv, v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_DiLepMass[idx_jerdn][8], ( (*Lep1)+(*Lep2) ).M(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep1pt[idx_jerdn][8] , (*Lep1).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep1eta[idx_jerdn][8], (*Lep1).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep1phi[idx_jerdn][8], (*Lep1).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep2pt[idx_jerdn][8] , (*Lep2).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep2eta[idx_jerdn][8], (*Lep2).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Lep2phi[idx_jerdn][8], (*Lep2).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet1pt[idx_jerdn][8] , (*Jet1JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet1eta[idx_jerdn][8], (*Jet1JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet1phi[idx_jerdn][8], (*Jet1JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet2pt[idx_jerdn][8] , (*Jet2JERDn).Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet2eta[idx_jerdn][8], (*Jet2JERDn).Eta() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Jet2phi[idx_jerdn][8], (*Jet2JERDn).Phi() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Num_Jets[idx_jerdn][8], v_jetresdn_idx.size(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_METpt[idx_jerdn][8]   , MetJERDn->Pt()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_METphi[idx_jerdn][8]  , MetJERDn->Phi()  , v_SystEvt[idx_jerdn] );
-
-                     FillHisto( h_sys_Top1Mass_[idx_jerdn]    , Top1->M()        , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Top1pt_[idx_jerdn]      , Top1->Pt()       , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Top1phi_[idx_jerdn]     , Top1->Phi()      , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Top1Rapidity_[idx_jerdn], Top1->Rapidity() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Top1Energy_[idx_jerdn]  , Top1->Energy()   , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Top2Mass_[idx_jerdn]    , Top2->M()        , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Top2pt_[idx_jerdn]      , Top2->Pt()       , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Top2phi_[idx_jerdn]     , Top2->Phi()      , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Top2Rapidity_[idx_jerdn], Top2->Rapidity() , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Top2Energy_[idx_jerdn]  , Top2->Energy()   , v_SystEvt[idx_jerdn] );
-
-                     FillHisto( h_sys_TopMass_[idx_jerdn]      , Top->M()         , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Toppt_[idx_jerdn]        , Top->Pt()        , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_Topphi_[idx_jerdn]       , Top->Phi()       , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_TopRapidity_[idx_jerdn]  , Top->Rapidity()  , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_TopEnergy_[idx_jerdn]    , Top->Energy()    , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_AnTopMass_[idx_jerdn]    , AnTop->M()       , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_AnToppt_[idx_jerdn]      , AnTop->Pt()      , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_AnTopphi_[idx_jerdn]     , AnTop->Phi()     , v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_AnTopRapidity_[idx_jerdn], AnTop->Rapidity(), v_SystEvt[idx_jerdn] );
-                     FillHisto( h_sys_AnTopEnergy_[idx_jerdn]  , AnTop->Energy()  , v_SystEvt[idx_jerdn] );
-
-                     v_recocp_O.clear();
-                     v_recocp_O.push_back( ssbcpviol->getO1Vari( Top, AnTop, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO2Vari( Top, AnTop, bJet, AnbJet ) );
-                     v_recocp_O.push_back( ssbcpviol->getO3Vari( bJet, AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO4Vari( AnbJet, bJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO5Vari( bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO6Vari( bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO7Vari( Top , AnTop, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO8Vari( Top, AnTop, bJet , AnbJet, AnLep, Lep ) );
-                     v_recocp_O.push_back( ssbcpviol->getO9Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO10Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO11Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO12Vari( bJet , AnbJet, AnLep, Lep )  );
-                     v_recocp_O.push_back( ssbcpviol->getO13Vari( bJet , AnbJet, AnLep, Lep )  );
-                     for (int j = 0; j < v_recocp_O.size(); ++ j )
-                     {
-                        FillHisto( h_sys_Reco_CPO_[idx_jerdn][j], v_recocp_O[j] , v_SystEvt[idx_jerdn]   );
-                        FillHisto( h_sys_Reco_CPO_ReRange_[idx_jerdn][j], v_recocp_O[j] , v_SystEvt[idx_jerdn]  );
-                     }
-                  } // Kinmatic Solver //
-               }// Num bJet Cut // one or more b-tagging //
-            } // JER Down MET Cut // 
-         } // JER Down Num Jet Cut 
-
-
-         //////////////////////
-         /// Fill Histogram ///
-         //////////////////////
-         //ClearVectors();*/
-     
-      }//Di-Lepton Analysis//
-
-      ///////////////////////////////////
-      /// ** Lepton + Jet Analysis ** ///
-      ///////////////////////////////////
+      }
       else if ( TString(Decaymode).Contains( "muonJet" )  ) 
       {
          cout << " -- We don't have Muon + Jet code ---" << endl;   
@@ -3054,28 +721,10 @@ void ssb_analysis::Start( int genLoopon )
    dir->cd();
 
    DeclareHistos();
-
-   /////////////////////////////////
-   /// For All-in-One Systematic ///
-   /////////////////////////////////
-   if (isAllSyst == true)
-   {
-      for (int i = 0; i < v_SystFullName.size(); ++i )
-      {
-         gSystem->mkdir(Form("output/%s",v_SystFullName[i].Data()));
-         a_fout[i] = new TFile(Form("output/%s/%s",v_SystFullName[i].Data(),v_outName[i].Data()),"RECREATE");
-         a_fout[i]->cd();
-         DeclareHistosSyst(i);
-      }
-   }
-   ReadDupleList(); 
 }
 
 void ssb_analysis::DeclareHistos()
 {
-
-   /// Test For Systematic All-in-One Code ///
-
    for (int i =0 ; i < 10 ; i++)
    {
       h_cf_NLeptons[i]       = new TH1D(Form("_h_cf_NLeptons_%d_"      , i),Form("Num. Lepton %s"                ,cutflowName[i].Data()), 20  , 0    , 20  ); h_cf_NLeptons[i]->Sumw2();         
@@ -3297,90 +946,6 @@ void ssb_analysis::DeclareHistos()
    h_CPO3_PhiVariDown_Minus_Plus  = new TH1D(Form("h_CPO3_PhiVariDown_Minus_Plus"),  Form("CPO3_PhiVariDown Minus-> Minus"), 200, -10, 10); h_CPO3_PhiVariDown_Minus_Plus->Sumw2();
 
    h_bTagWeight   = new TH1D(Form("h_bTagWeight"),   Form("bTag Weight "),   200, -2, 2); h_bTagWeight->Sumw2();
-}
-
-void ssb_analysis::DeclareHistosSyst(int index_)
-{
-   for (int j =0; j <10; j++) // Cutflow Loop //
-   {
-      // Cut Flow histogram //
-      h_cf_sys_NLeptons[index_][j]       = new TH1D(Form("_h_cf_sys_NLeptons_%s_%d_"      ,v_SystFullName[index_].Data(), j),Form("Num. Lepton %s (%s)"                ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 20  , 0    , 20  ); h_cf_sys_NLeptons[index_][j]->Sumw2();         
-      h_cf_sys_Lep1pt[index_][j]         = new TH1D(Form("_h_cf_sys_Lep1pt_%s_%d_"        ,v_SystFullName[index_].Data(), j),Form("Leading Lepton pT %s (%s)"          ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 1000, 0    , 1000); h_cf_sys_Lep1pt[index_][j]->Sumw2();           
-      h_cf_sys_Lep1phi[index_][j]        = new TH1D(Form("_h_cf_sys_Lep1phi_%s_%d_"       ,v_SystFullName[index_].Data(), j),Form("Leading Lepton phi %s (%s)"        ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 24  , -1*pi, 1*pi); h_cf_sys_Lep1phi[index_][j]->Sumw2();          
-      h_cf_sys_Lep1eta[index_][j]        = new TH1D(Form("_h_cf_sys_Lep1eta_%s_%d_"       ,v_SystFullName[index_].Data(), j),Form("Leading Lepton eta %s (%s)"        ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 50  , -2.5 , 2.5 ); h_cf_sys_Lep1eta[index_][j]->Sumw2();          
-      h_cf_sys_Lep2pt[index_][j]         = new TH1D(Form("_h_cf_sys_Lep2pt_%s_%d_"        ,v_SystFullName[index_].Data(), j),Form("Second Leading Lepton pT %s (%s)"   ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 1000, 0    , 1000); h_cf_sys_Lep2pt[index_][j]->Sumw2();           
-      h_cf_sys_Lep2phi[index_][j]        = new TH1D(Form("_h_cf_sys_Lep2phi_%s_%d_"       ,v_SystFullName[index_].Data(), j),Form("Second Leading Lepton phi %s (%s)"  ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 24  , -1*pi, 1*pi); h_cf_sys_Lep2phi[index_][j]->Sumw2();      
-      h_cf_sys_Lep2eta[index_][j]        = new TH1D(Form("_h_cf_sys_Lep2eta_%s_%d_"       ,v_SystFullName[index_].Data(), j),Form("Second Leading Lepton eta %s (%s)"  ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 50  , -2.5 , 2.5 ); h_cf_sys_Lep2eta[index_][j]->Sumw2();       
-      h_cf_sys_dilep_inv_mass[index_][j] = new TH1D(Form("_h_cf_sys_dilep_inv_mass_%s_%d_",v_SystFullName[index_].Data(), j),Form("Invariant Mass of Dilepton %s (%s)" ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 1000, 0    , 1000); h_cf_sys_dilep_inv_mass[index_][j]->Sumw2();
-      h_cf_sys_Jet1pt[index_][j]         = new TH1D(Form("_h_cf_sys_Jet1pt_%s_%d_"        ,v_SystFullName[index_].Data(), j),Form("Leading Jet pT %s (%s)"             ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 1000, 0    , 1000); h_cf_sys_Jet1pt[index_][j]->Sumw2();       
-      h_cf_sys_Jet1phi[index_][j]        = new TH1D(Form("_h_cf_sys_Jet1phi_%s_%d_"       ,v_SystFullName[index_].Data(), j),Form("Leading Jet phi %s (%s)"            ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 24  , -1*pi, 1*pi); h_cf_sys_Jet1phi[index_][j]->Sumw2();       
-      h_cf_sys_Jet1eta[index_][j]        = new TH1D(Form("_h_cf_sys_Jet1eta_%s_%d_"       ,v_SystFullName[index_].Data(), j),Form("Leading Jet eta %s (%s)"            ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 50  , -2.5 , 2.5 ); h_cf_sys_Jet1eta[index_][j]->Sumw2();       
-      h_cf_sys_Jet2pt[index_][j]         = new TH1D(Form("_h_cf_sys_Jet2pt_%s_%d_"        ,v_SystFullName[index_].Data(), j),Form("Second Leading Jet pT %s (%s)"      ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 1000, 0    , 1000); h_cf_sys_Jet2pt[index_][j]->Sumw2();        
-      h_cf_sys_Jet2phi[index_][j]        = new TH1D(Form("_h_cf_sys_Jet2phi_%s_%d_"       ,v_SystFullName[index_].Data(), j),Form("Second Leading Jet phi %s (%s)"     ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 24  , -1*pi, 1*pi); h_cf_sys_Jet2phi[index_][j]->Sumw2();       
-      h_cf_sys_Jet2eta[index_][j]        = new TH1D(Form("_h_cf_sys_Jet2eta_%s_%d_"       ,v_SystFullName[index_].Data(), j),Form("Second Leading Jet eta %s (%s)"     ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 50  , -2.5 , 2.5 ); h_cf_sys_Jet2eta[index_][j]->Sumw2();      
-      h_cf_sys_NJets[index_][j]          = new TH1D(Form("_h_cf_sys_NJets_%s_%d_"         ,v_SystFullName[index_].Data(), j),Form("Num. of Jets %s (%s)"               ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 20  , 0    , 20  ); h_cf_sys_NJets[index_][j]->Sumw2();        
-      h_cf_sys_metpt[index_][j]          = new TH1D(Form("_h_cf_sys_metpt_%s_%d_"         ,v_SystFullName[index_].Data(), j),Form("MET %s (%s)"                        ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 1000, 0    , 1000); h_cf_sys_metpt[index_][j]->Sumw2();        
-      h_cf_sys_metphi[index_][j]         = new TH1D(Form("_h_cf_sys_metphi_%s_%d_"        ,v_SystFullName[index_].Data(), j),Form("MET Phi %s (%s)"                    ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 24  , -1*pi, 1*pi); h_cf_sys_metphi[index_][j]->Sumw2();       
-      h_cf_sys_Nbjets[index_][j]         = new TH1D(Form("_h_cf_sys_Nbjets_%s_%d_"        ,v_SystFullName[index_].Data(), j),Form("Num. of b-jets %s (%s)"             ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 20  , 0    , 20  ); h_cf_sys_Nbjets[index_][j]->Sumw2();        
-      h_cf_sys_NPV[index_][j]            = new TH1D(Form("_h_cf_sys_NPV_%s_%d_"           ,v_SystFullName[index_].Data(), j),Form("Num. of Primary Vertex %s (%s)"     ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 100 , 0    , 100 ); h_cf_sys_NPV[index_][j]->Sumw2();
-
-      h_sys_Lep1pt[index_][j]  = new TH1D(Form("h_sys_Lep1pt_%s_%d"   ,v_SystFullName[index_].Data(), j), Form("Leading Lepton pT %s (%s)"        ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 250, 0.0, 250); h_sys_Lep1pt[index_][j]->Sumw2(); 
-      h_sys_Lep2pt[index_][j]  = new TH1D(Form("h_sys_Lep2pt_%s_%d_"  ,v_SystFullName[index_].Data(), j), Form("Second Leading Lepton pT %s (%s)" ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 250, 0.0, 250); h_sys_Lep2pt[index_][j]->Sumw2();
-      h_sys_Lep1eta[index_][j] = new TH1D(Form("h_sys_Lep1eta_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Leading Lepton Eta    %s (%s)"    ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 50, -2.5, 2.5); h_sys_Lep1eta[index_][j]->Sumw2();
-      h_sys_Lep2eta[index_][j] = new TH1D(Form("h_sys_Lep2eta_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Second Leading Lepton Eta %s (%s)",cutflowName[j].Data(),v_SystFullName[index_].Data()), 50, -2.5, 2.5); h_sys_Lep2eta[index_][j]->Sumw2();
-      h_sys_Lep1phi[index_][j] = new TH1D(Form("h_sys_Lep1phi_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Leading Lepton Phi %s (%s)"       ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 24, -1*pi, pi); h_sys_Lep1phi[index_][j]->Sumw2();
-      h_sys_Lep2phi[index_][j] = new TH1D(Form("h_sys_Lep2phi_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Second Leading Lepton Phi %s (%s)",cutflowName[j].Data(),v_SystFullName[index_].Data()), 24, -1*pi, pi); h_sys_Lep2phi[index_][j]->Sumw2();
-   
-      h_sys_Muonpt[index_][j]  = new TH1D(Form("h_sys_Muonpt_%s_%d_"  ,v_SystFullName[index_].Data(), j), Form("Muon pT %s (%s)"         ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 250, 0.0, 250); h_sys_Muonpt[index_][j]->Sumw2();
-      h_sys_Elecpt[index_][j]  = new TH1D(Form("h_sys_Elecpt_%s_%d_"  ,v_SystFullName[index_].Data(), j), Form("Electron pT %s (%s)"     ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 250, 0.0, 250); h_sys_Elecpt[index_][j]->Sumw2();
-      h_sys_Muoneta[index_][j] = new TH1D(Form("h_sys_Muoneta_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Muon Eta %s (%s)"        ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 50, -2.5, 2.5); h_sys_Muoneta[index_][j]->Sumw2();
-      h_sys_Eleceta[index_][j] = new TH1D(Form("h_sys_Eleceta_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Electron Eta %s (%s)"    ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 50, -2.5, 2.5); h_sys_Eleceta[index_][j]->Sumw2();
-      h_sys_Muonphi[index_][j] = new TH1D(Form("h_sys_Muonphi_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Muon Phi %s (%s)"        ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 24, -1*pi, pi); h_sys_Muonphi[index_][j]->Sumw2();
-      h_sys_Elecphi[index_][j] = new TH1D(Form("h_sys_Elecphi_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Electron Phi %s (%s)"    ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 24, -1*pi, pi); h_sys_Elecphi[index_][j]->Sumw2();
-   
-      h_sys_Jet1pt[index_][j]  = new TH1D(Form("h_sys_Jet1pt_%s_%d_",  v_SystFullName[index_].Data(), j), Form("Leading Jet pT %s (%s)"        ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 250, 0.0, 250); h_sys_Jet1pt[index_][j]->Sumw2();
-      h_sys_Jet2pt[index_][j]  = new TH1D(Form("h_sys_Jet2pt_%s_%d_",  v_SystFullName[index_].Data(), j), Form("Second Leading Jet pT %s (%s)" ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 250, 0.0, 250); h_sys_Jet2pt[index_][j]->Sumw2();
-      h_sys_Jet1eta[index_][j] = new TH1D(Form("h_sys_Jet1eta_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Leading Jet Eta %s (%s)"       ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 50, -2.5, 2.5); h_sys_Jet1eta[index_][j]->Sumw2();
-      h_sys_Jet2eta[index_][j] = new TH1D(Form("h_sys_Jet2eta_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Second Leading Jet Eta %s (%s)",cutflowName[j].Data(),v_SystFullName[index_].Data()), 50, -2.5, 2.5); h_sys_Jet2eta[index_][j]->Sumw2();
-      h_sys_Jet1phi[index_][j] = new TH1D(Form("h_sys_Jet1phi_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Leading Jet Phi %s (%s)"       ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 24, -1*pi, pi); h_sys_Jet1phi[index_][j]->Sumw2();
-      h_sys_Jet2phi[index_][j] = new TH1D(Form("h_sys_Jet2phi_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("Second Leading Jet Phi %s (%s)",cutflowName[j].Data(),v_SystFullName[index_].Data()), 24, -1*pi, pi); h_sys_Jet2phi[index_][j]->Sumw2();
-    
-     
-      h_sys_METpt[index_][j]  = new TH1D(Form("h_sys_METpt_%s_%d_"  ,v_SystFullName[index_].Data(), j), Form("MET pT %s (%s)" ,cutflowName[j].Data(),v_SystFullName[index_].Data()), 200, 0.0, 200); h_sys_METpt[index_][j]->Sumw2();
-      h_sys_METphi[index_][j] = new TH1D(Form("h_sys_METphi_%s_%d_" ,v_SystFullName[index_].Data(), j), Form("MET Phi %s (%s)",cutflowName[j].Data(),v_SystFullName[index_].Data()), 24, -1*pi, pi); h_sys_METphi[index_][j]->Sumw2();
-   
-      h_sys_DiLepMass[index_][j] = new TH1D(Form("h_sys_DiLepMass_%s_%d_"     ,v_SystFullName[index_].Data(), j),Form("Di-Lepton Invariant Mass %s (%s)",cutflowName[j].Data(),v_SystFullName[index_].Data()), 300, 0.0, 300); h_sys_DiLepMass[index_][j]->Sumw2();
-      h_sys_Num_PV[index_][j]    = new TH1D(Form("h_sys_Num_PV_%s_%d_"        ,v_SystFullName[index_].Data(), j),     Form("Num of Primary Vertex after %s (%s)",cutflowName[j].Data(),v_SystFullName[index_].Data()), 100, 0.0, 100); h_sys_Num_PV[index_][j]->Sumw2();
-      h_sys_Num_Jets[index_][j]  = new TH1D(Form("h_sys_Num_Jets_%s_%d_"      ,v_SystFullName[index_].Data(), j), Form("Num. of Jets after %s (%s)",cutflowName[j].Data(),v_SystFullName[index_].Data()), 20, 0.0, 20); h_sys_Num_Jets[index_][j]->Sumw2();
-      h_sys_Num_bJets[index_][j] = new TH1D(Form("h_sys_Num_bJets_%s_%d_"     ,v_SystFullName[index_].Data(), j),Form("Num. of b Jets after %s (%s)",cutflowName[j].Data(),v_SystFullName[index_].Data()), 20, 0.0, 20); h_sys_Num_bJets[index_][j]->Sumw2();
-   } // Cut Flow LOOP
-   for (int j =0; j < 13; ++j)
-   {
-      h_sys_Reco_CPO_[index_][j]         = new TH1D(Form("h_sys_Reco_CPO%d_%s"        ,j+1 ,v_SystFullName[index_].Data() ), Form("CPO%d (%s)",j+1,v_SystFullName[index_].Data()   ), 200, -10, 10); h_sys_Reco_CPO_[index_][j]->Sumw2();
-      h_sys_Reco_CPO_ReRange_[index_][j] = new TH1D(Form("h_sys_Reco_CPO%d_%s_ReRange",j+1 ,v_SystFullName[index_].Data() ), Form("CPO%d (%s)",j+1,v_SystFullName[index_].Data()   ), 40, -2, 2); h_sys_Reco_CPO_ReRange_[index_][j]->Sumw2();
-   }
-
-   h_sys_Top1Mass_[index_]     = new TH1D(Form("h_sys_Top1Mass_%s"     ,v_SystFullName[index_].Data() ), Form("Top1 Mass (%s)"     ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_Top1Mass_[index_]->Sumw2(); 
-   h_sys_Top1pt_[index_]       = new TH1D(Form("h_sys_Top1pt_%s"       ,v_SystFullName[index_].Data() ), Form("Top1 pt (%s)"       ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_Top1pt_[index_]->Sumw2(); 
-   h_sys_Top1Rapidity_[index_] = new TH1D(Form("h_sys_Top1Rapidity_%s" ,v_SystFullName[index_].Data() ), Form("Top1 Rapidity (%s)" ,v_SystFullName[index_].Data() ), 100, -5, 5); h_sys_Top1Rapidity_[index_]->Sumw2(); 
-   h_sys_Top1phi_[index_]      = new TH1D(Form("h_sys_Top1phi_%s"      ,v_SystFullName[index_].Data() ), Form("Top1 phi (%s)"      ,v_SystFullName[index_].Data() ), 24, -1*pi, pi); h_sys_Top1phi_[index_]->Sumw2(); 
-   h_sys_Top1Energy_[index_]   = new TH1D(Form("h_sys_Top1Energy_%s"   ,v_SystFullName[index_].Data() ), Form("Top1 Energy (%s)"   ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_Top1Energy_[index_]->Sumw2(); 
-   h_sys_Top2Mass_[index_]     = new TH1D(Form("h_sys_Top2Mass_%s"     ,v_SystFullName[index_].Data() ), Form("Top2 Mass (%s)"     ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_Top2Mass_[index_]->Sumw2();
-   h_sys_Top2pt_[index_]       = new TH1D(Form("h_sys_Top2pt_%s"       ,v_SystFullName[index_].Data() ), Form("Top2 pt (%s)"       ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_Top2pt_[index_]->Sumw2(); 
-   h_sys_Top2Rapidity_[index_] = new TH1D(Form("h_sys_Top2Rapidity_%s" ,v_SystFullName[index_].Data() ), Form("Top2 Rapidity (%s)" ,v_SystFullName[index_].Data() ), 100, -5, 5); h_sys_Top2Rapidity_[index_]->Sumw2(); 
-   h_sys_Top2phi_[index_]      = new TH1D(Form("h_sys_Top2phi_%s"      ,v_SystFullName[index_].Data() ), Form("Top2 phi (%s)"      ,v_SystFullName[index_].Data() ), 24, -1*pi, pi); h_sys_Top2phi_[index_]->Sumw2(); 
-   h_sys_Top2Energy_[index_]   = new TH1D(Form("h_sys_Top2Energy_%s"   ,v_SystFullName[index_].Data() ), Form("Top2 Energy (%s)"   ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_Top2Energy_[index_]->Sumw2(); 
-
-   h_sys_TopMass_[index_]       = new TH1D(Form("h_sys_TopMass_%s"       ,v_SystFullName[index_].Data() ), Form("Top Mass (%s)"       ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_TopMass_[index_]->Sumw2(); 
-   h_sys_Toppt_[index_]         = new TH1D(Form("h_sys_Toppt_%s"         ,v_SystFullName[index_].Data() ), Form("Top pt (%s)"         ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_Toppt_[index_]->Sumw2(); 
-   h_sys_TopRapidity_[index_]   = new TH1D(Form("h_sys_TopRapidity_%s"   ,v_SystFullName[index_].Data() ), Form("Top Rapidity (%s)"   ,v_SystFullName[index_].Data() ), 100, -5, 5); h_sys_TopRapidity_[index_]->Sumw2(); 
-   h_sys_Topphi_[index_]        = new TH1D(Form("h_sys_Topphi_%s"        ,v_SystFullName[index_].Data() ), Form("Top phi (%s)"        ,v_SystFullName[index_].Data() ), 24, -1*pi, pi); h_sys_Topphi_[index_]->Sumw2(); 
-   h_sys_TopEnergy_[index_]     = new TH1D(Form("h_sys_TopEnergy_%s"     ,v_SystFullName[index_].Data() ), Form("Top Energy (%s)"     ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_TopEnergy_[index_]->Sumw2(); 
-   h_sys_AnTopMass_[index_]     = new TH1D(Form("h_sys_AnTopMass_%s"     ,v_SystFullName[index_].Data() ), Form("AnTop Mass (%s)"     ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_AnTopMass_[index_]->Sumw2();
-   h_sys_AnToppt_[index_]       = new TH1D(Form("h_sys_AnToppt_%s"       ,v_SystFullName[index_].Data() ), Form("AnTop pt (%s)"       ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_AnToppt_[index_]->Sumw2(); 
-   h_sys_AnTopRapidity_[index_] = new TH1D(Form("h_sys_AnTopRapidity_%s" ,v_SystFullName[index_].Data() ), Form("AnTop Rapidity (%s)" ,v_SystFullName[index_].Data() ), 100, -5, 5); h_sys_AnTopRapidity_[index_]->Sumw2(); 
-   h_sys_AnTopphi_[index_]      = new TH1D(Form("h_sys_AnTopphi_%s"      ,v_SystFullName[index_].Data() ), Form("AnTop phi (%s)"      ,v_SystFullName[index_].Data() ), 24, -1*pi, pi); h_sys_AnTopphi_[index_]->Sumw2(); 
-   h_sys_AnTopEnergy_[index_]   = new TH1D(Form("h_sys_AnTopEnergy_%s"   ,v_SystFullName[index_].Data() ), Form("AnTop Energy (%s)"   ,v_SystFullName[index_].Data() ), 1000, 0.0, 1000); h_sys_AnTopEnergy_[index_]->Sumw2(); 
 
 }
 
@@ -3388,17 +953,6 @@ void ssb_analysis::End()
 {
    fout->Write();
    fout->Close();
-   /////////////////////////////////
-   /// For All-in-One Systematic ///
-   /////////////////////////////////
-   if (isAllSyst == true)
-   {
-      for (int i = 0; i < v_SystFullName.size(); ++i )
-      {
-         a_fout[i]->Write();
-         a_fout[i]->Close();
-      }
-   }
 }
 
 void ssb_analysis::SetInputFileName( char *inname )
@@ -3521,20 +1075,23 @@ void ssb_analysis::MCSF()
       }
       else if ( TString( CenOfE ).Contains( "13TeV" ) ) // for 13 TeV
       {
-         if      ( TString(FileName_).Contains( "TTJets"              ) ) { mc_sf_ = 831.76*   lumi / NtupletotalEvent; }
+         //if      ( TString(FileName_).Contains( "TTJets"              ) ) { mc_sf_ = 831.76* lumi / NtupletotalEvent; }
+         if      ( TString(FileName_).Contains( "TTbar_Signal"        ) ) { mc_sf_ = 88.51*    lumi / NtupletotalEvent; }
+         else if ( TString(FileName_).Contains( "TTbar_SemiLep"       ) ) { mc_sf_ = 366.3*    lumi / NtupletotalEvent; }
+         else if ( TString(FileName_).Contains( "TTbar_AllHadron"     ) ) { mc_sf_ = 378.9*    lumi / NtupletotalEvent; }
          else if ( TString(FileName_).Contains( "WJetsToLNu"          ) ) { mc_sf_ = 61526*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "DYJetsToLL_M_10To50" ) ) { mc_sf_ = 18810*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "DYJetsToLL_M_50"     ) ) { mc_sf_ = 5941.0*   lumi / NtupletotalEvent; }
+         else if ( TString(FileName_).Contains( "DYJetsToLL_M_10To50" ) ) { mc_sf_ = 20460.0*  lumi / NtupletotalEvent; }
+         else if ( TString(FileName_).Contains( "DYJetsToLL_M_50"     ) ) { mc_sf_ = 6077.22*  lumi / NtupletotalEvent; }
          //else if ( TString(FileName_).Contains( "DYJetsToLL_M_50"     ) ) { mc_sf_ = 6025.2*   lumi / NtupletotalEvent; }
          else if ( TString(FileName_).Contains( "ST_tW_top"           ) ) { mc_sf_ = 35.6*     lumi / NtupletotalEvent; }
          else if ( TString(FileName_).Contains( "ST_tW_antitop"       ) ) { mc_sf_ = 35.6*     lumi / NtupletotalEvent; }
          else if ( TString(FileName_).Contains( "WW"                  ) ) { mc_sf_ = 118.7*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "WZ"                  ) ) { mc_sf_ = 65.9*     lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "ZZ"                  ) ) { mc_sf_ = 31.8*     lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_WJetToLNu"     ) ) { mc_sf_ = 0.2043*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_WQQ"           ) ) { mc_sf_ = 0.4062*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_ZToLLNuNu"     ) ) { mc_sf_ = 0.2529*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_ZQQ"           ) ) { mc_sf_ = 0.5297*   lumi / NtupletotalEvent; }
+         else if ( TString(FileName_).Contains( "WZ"                  ) ) { mc_sf_ = 27.57*     lumi / NtupletotalEvent; }
+         else if ( TString(FileName_).Contains( "ZZ"                  ) ) { mc_sf_ = 12.14*     lumi / NtupletotalEvent; }
+         else if ( TString(FileName_).Contains( "TTbar_WJetToLNu"     ) ) { mc_sf_ = 0.2161*   lumi / NtupletotalEvent; }
+         else if ( TString(FileName_).Contains( "TTbar_WQQ"           ) ) { mc_sf_ = 0.4377*   lumi / NtupletotalEvent; }
+         else if ( TString(FileName_).Contains( "TTbar_ZToLLNuNu"     ) ) { mc_sf_ = 0.2439*   lumi / NtupletotalEvent; }
+         else if ( TString(FileName_).Contains( "TTbar_ZQQ"           ) ) { mc_sf_ = 0.5104*   lumi / NtupletotalEvent; }
          else if ( TString(FileName_).Contains( "Z1Jet"               ) ) { mc_sf_ = 1921.8*   lumi / NtupletotalEvent; }
          else if ( TString(FileName_).Contains( "Data"                ) ) { mc_sf_ = 1;                                 }
          else { cout << " File Name Error !! at MCSF()" << endl;}
@@ -4034,6 +1591,7 @@ void ssb_analysis::NumPVCount()
       //cout <<  " Filter_PV->at(i) : " <<  Filter_PV->at(i) << endl;
       if ( Filter_PV->at(i) == true ) {num_pv++;}
    }
+   //cout << "counted Num PV " << endl;
 }
 
 bool ssb_analysis::EveRun()
@@ -4163,103 +1721,7 @@ bool ssb_analysis::Trigger()
 // Function of Muon Rocheser Correction //
 TLorentzVector* ssb_analysis::ApplyRocCor(TLorentzVector* tmp,int index_)
 {
-   TLorentzVector* applied = new TLorentzVector();
-   double muoncorsf =  1.0;
-
-   if( FileName_.Contains("Data") )
-   {
-      /// For DATA 
-      int charge = Muon_Charge->at(index_); 
-      if ( MuEnSys != "none")
-      {
-         /// Get Central Value ///
-         muoncorsf = ssbmucor->kScaleDT(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(),0,0); 
-         /// Calc Unc ///
-         double totalunc = 0;
-         if( MuEnSys != "central" ) {
-            // Cal Stat. Unc. //
-            TH1D* stat = new TH1D("stat", "", 1000, 0., 10.);
-            for (int i = 0; i < 100; ++i) stat->Fill(ssbmucor->kScaleDT(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(),1,i) );
-            double statunc = stat->GetRMS() / stat->GetMean();
-            delete stat;
-            double CorDm, FitDm, deviation, maxDeviation = 1.;
-            for(auto i=0; i<5; ++i) {
-               CorDm = ssbmucor->kScaleDT(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(),  4, i);
-               FitDm = ssbmucor->kScaleDT(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(),  5, i); 
-               deviation = (fabs(CorDm-1) > fabs(FitDm-1)) ? CorDm : FitDm;
-               if( fabs(deviation-1) > fabs(maxDeviation-1) ) maxDeviation = deviation;
-            } 
-            //cout << "maxDeviation :" << maxDeviation << endl;
-            totalunc = sqrt( pow(statunc,2) + pow(abs(deviation-muoncorsf),2) );
-            //cout << "totalunc : " << totalunc<< endl;
-            if ( MuEnSys == "up")       {totalunc =  1*totalunc;} 
-            else if ( MuEnSys == "down"){totalunc = -1*totalunc;} 
-            else {muoncorsf = 1; totalunc =0;cout << "Check Out YOU ApplyRocCor Option !!" << endl; } 
-         }
-         else {totalunc = 0;}
-         muoncorsf = muoncorsf+totalunc;
-      }
-      else { muoncorsf = 1; }
-      //cout << "muoncorsf : " << muoncorsf << endl;
-   }
-   else {
-   /// For MC
-      double u1 = Muon_rand1->at(index_);
-      double u2 = Muon_rand2->at(index_);
-      int nTkLayer = Muon_trackerLayers->at(index_); 
-      int charge = Muon_Charge->at(index_); 
-      TLorentzVector* genMu = (TLorentzVector*)GenMuon->At(index_); 
-      if ( MuEnSys != "none"){
-         /// Get Central Value ///
-         if (genMu->Pt() > 0.0 && genMu->Eta() == 0){
-            muoncorsf = ssbmucor->kScaleFromGenMC(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(), nTkLayer, genMu->Pt(), u1, 0, 0);
-         }
-         else {
-            muoncorsf = ssbmucor->kScaleAndSmearMC(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(), nTkLayer, u1, u2, 0, 0);
-         }
-         /// Calc Unc ///
-         double totalunc = 0;
-         if( MuEnSys != "central" ) {
-            // Cal Stat. Unc. //
-            TH1D* stat = new TH1D("stat", "", 1000, 0., 10.);
-            if (genMu->Pt() > 0.0 && genMu->Eta() == 0){
-               for (int i = 0; i < 100; ++i) stat->Fill(ssbmucor->kScaleFromGenMC(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(), nTkLayer, genMu->Pt(), u1, 1, i) );
-            }
-            else {
-               muoncorsf = ssbmucor->kScaleAndSmearMC(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(), nTkLayer, u1, u2, 0, 0);
-               for (int i = 0; i < 100; ++i) stat->Fill(ssbmucor->kScaleAndSmearMC(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(), nTkLayer, u1, u2, 1, i));
-            }
-            double statunc = stat->GetRMS() / stat->GetMean();
-            delete stat;
-            double CorDm, FitDm, deviation, maxDeviation = 1.;
-            for(auto i=0; i<5; ++i) {
-               if (genMu->Pt() > 0.0 && genMu->Eta() == 0){
-                  CorDm = ssbmucor->kScaleFromGenMC(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(), nTkLayer, genMu->Pt(), u1, 4, i);
-                  FitDm = ssbmucor->kScaleFromGenMC(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(), nTkLayer, genMu->Pt(), u1, 5, i); 
-               }
-               else {
-                  CorDm = ssbmucor->kScaleAndSmearMC(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(), nTkLayer, u1, u2, 4, i);
-                  FitDm = ssbmucor->kScaleAndSmearMC(charge, tmp->Pt(), tmp->Eta(), tmp->Phi(), nTkLayer, u1, u2, 5, i);
-               }
-               deviation = (fabs(CorDm-1) > fabs(FitDm-1)) ? CorDm : FitDm;
-               if( fabs(deviation-1) > fabs(maxDeviation-1) ) maxDeviation = deviation;
-            } 
-            //cout << "maxDeviation :" << maxDeviation << endl;
-            totalunc = sqrt( pow(statunc,2) + pow(abs(deviation-muoncorsf),2) );
-            //cout << "totalunc : " << totalunc<< endl;
-            if ( MuEnSys == "up")       {totalunc =  1*totalunc;} 
-            else if ( MuEnSys == "down"){totalunc = -1*totalunc;} 
-            else {muoncorsf = 1; totalunc =0;cout << "Check Out YOU ApplyRocCor Option !!" << endl; } 
-         }
-         else {totalunc = 0;}
-         muoncorsf = muoncorsf+totalunc;
-      }
-      else { muoncorsf = 1; }
-      //cout << "muoncorsf : " << muoncorsf << endl;
-   }
-   if (muoncorsf != muoncorsf) {muoncorsf = 1;}
-   applied->SetPtEtaPhiM(muoncorsf*tmp->Pt(),tmp->Eta(),tmp->Phi(),tmp->M());
-   //cout << "tmp pt : " << tmp->Pt() << " applied pt : " << applied->Pt() << endl; 
+   TLorentzVector* applied = tmp;// new TLorentzVector();
    return applied;
 }
 void ssb_analysis::CorrectedMuonCollection()
@@ -4293,14 +1755,15 @@ TLorentzVector* ssb_analysis::ApplyElecSCSM( TLorentzVector* tmp,int index_)
    if (EleScSmSys == "Central")    {return tmp;}
    TLorentzVector* systl_ = new TLorentzVector();
    double scsmfac_ = 1.0;
-   if (EleScSmSys == "UpUp"){scsmfac_ = Elec_ScSmUpUp->at(index_);}
+/*   if (EleScSmSys == "UpUp"){scsmfac_ = Elec_ScSmUpUp->at(index_);}
    else if (EleScSmSys == "UpDown"){scsmfac_ = Elec_ScSmUpDown->at(index_);}
    else if (EleScSmSys == "DownUp"){scsmfac_ = Elec_ScSmDownUp->at(index_);}
    else if (EleScSmSys == "DownDown"){scsmfac_ = Elec_ScSmDownDown->at(index_);}
    else {cout << "Check Out Your EleScSmSys Option !!! " << EleScSmSys << endl;}
    //cout << "scsmfac_ : " << scsmfac_ << endl;
    systl_->SetPtEtaPhiM(scsmfac_*tmp->Pt(),tmp->Eta(),tmp->Phi(),tmp->M());
-   return systl_;
+   return systl_;*/
+   return tmp;
 }
 // Function for Lepton Selection
 void ssb_analysis::LeptonSelector()
@@ -4355,21 +1818,8 @@ void ssb_analysis::LeptonSelector()
          //if (v_electron_Id->at(i) == false) {continue;}    
          if (v_lepton_Id->at(i) == false) {continue;}    
          if ( fabs( Elec_Supercluster_Eta->at(i) ) > 1.4442 && fabs( Elec_Supercluster_Eta->at(i) ) < 1.566 ) {continue;} 
-         //if ( Elec_ChargeId_GsfCtfPx->at(i) == false ){continue;}//
          if ( Elec_ChargeId_GsfPx->at(i) == false ){continue;}//
-         if ( fabs( Elec_Supercluster_Eta->at(i) ) <= 1.479 ) 
-         { 
-            if (v_lepton_iso->at(i) > 0.0695 ) {continue;}
-            if ( fabs( Elec_Track_GsfdZ->at(i) ) > 0.10 || fabs( Elec_Track_GsfdXY->at(i) ) > 0.05 )  {continue;} 
-         }
-         if ( fabs( Elec_Supercluster_Eta->at(i) ) > 1.479 )  
-         {  
-            if (v_lepton_iso->at(i) > 0.0821 ) {continue;}
-            if (fabs(Elec_Track_GsfdZ->at(i)) > 0.20 || fabs(Elec_Track_GsfdXY->at(i)) > 0.10 )  {continue;} 
-         }
-
          v_lep_idx_temp.push_back( i );
-
          if ( v_lep_idx_temp.size()==1 && v_lepton_idx.size() == 0 ){  v_lepton_idx.push_back(i); }
          if ( v_lep_idx_temp.size() > 0 )
          {
@@ -4407,14 +1857,6 @@ void ssb_analysis::LeptonSelector()
          if ( Elec_Conversion->at(i) == false ){continue;}
          if ( fabs( Elec_Supercluster_Eta->at(i) ) > 1.4442 && fabs( Elec_Supercluster_Eta->at(i) ) < 1.566 ) {continue;}
          if ( Elec_ChargeId_GsfPx->at(i) == false ){continue;}        
-         if ( fabs( Elec_Supercluster_Eta->at(i) ) <= 1.479 ) 
-         { 
-            if ( fabs( Elec_Track_GsfdZ->at(i) ) > 0.10 || fabs( Elec_Track_GsfdXY->at(i) ) > 0.05 )  {continue;} 
-         }
-         if ( fabs( Elec_Supercluster_Eta->at(i) ) > 1.479 )  
-         {  
-            if (fabs(Elec_Track_GsfdZ->at(i)) > 0.20 || fabs(Elec_Track_GsfdXY->at(i)) > 0.10 )  {continue;} 
-         }
          v_electron_idx_temp.push_back( i );
 
       }
@@ -4434,7 +1876,7 @@ void ssb_analysis::LeptonSelector()
 
    }
    else { cout << "Lepton Selection error" << endl;}
-
+ 
 
    ///////////////////////////////////////////
    /// Electron Selection For Jet Cleaning /// 
@@ -4458,22 +1900,24 @@ void ssb_analysis::LeptonSelector()
 //         v_ele_idx_cand.push_back( ine );
          if ( fabs( Elec_Supercluster_Eta->at(ine) ) <= 1.479 )
          {
-            if (
+            /*if (
                  v_el_iso_jcl->at( ine ) < 0.175 &&
                  fabs( Elec_Track_GsfdXY->at(ine) ) < 0.05 &&
                  fabs( Elec_Track_GsfdZ->at(ine) ) < 0.10 
                )
-            { v_ele_idx_cand.push_back( ine ); }
+            { v_ele_idx_cand.push_back( ine ); }*/
 
+            v_ele_idx_cand.push_back( ine ); 
          } 
          else 
          {
-            if (
+            /*if (
                  v_el_iso_jcl->at( ine ) < 0.159 &&           
                  fabs( Elec_Track_GsfdXY->at(ine) ) < 0.10 &&
                  fabs( Elec_Track_GsfdXY->at(ine) ) < 0.20 
                )
-            { v_ele_idx_cand.push_back( ine ); }
+            { v_ele_idx_cand.push_back( ine ); }*/
+            v_ele_idx_cand.push_back( ine ); 
         
          }
       }
@@ -4492,6 +1936,7 @@ void ssb_analysis::LeptonSelector()
          )
       { v_mu_idx_cand.push_back( inmu ); }
    }
+
 }
 bool ssb_analysis::NumIsoLeptons()//YOU SHOULD REQUIRE THIS FUNCTION AFTER LEPTONSELETOR //
 {
@@ -4520,7 +1965,6 @@ bool ssb_analysis::MuVeto()
    bool muveto;
    muveto = false;
    int vetolep = 0;
-
    if ( TString(Decaymode).Contains( "dimuon" ) )
    {
       for ( int ilumuon = 0; ilumuon < Muon_Count; ++ilumuon )
@@ -4566,6 +2010,7 @@ bool ssb_analysis::MuVeto()
    else { cout << "Something Wrong At MuVeto. Check Decaymode-" << endl;}
 
    if ( vetolep == 0 ){ muveto = true; }
+
    return muveto;
 }
 bool ssb_analysis::ElVeto()
@@ -4681,6 +2126,7 @@ bool ssb_analysis::ThirdLeptonVeto()
 
       if( TString(Decaymode).Contains( "dimuon" ) ) 
       { 
+         //cout << "v_lepton_idx size : " << v_lepton_idx.size() << endl;
          if ( Muon_Charge->at( v_lepton_idx.at(0) ) == Muon_Charge->at( v_lepton_idx.at(1) ) ) {third_veto = false;;}
          if ( MuVeto() == false ) {third_veto = false;;}
          if ( ElVeto() == false ) {third_veto = false;;}
@@ -4702,6 +2148,7 @@ bool ssb_analysis::ThirdLeptonVeto()
    }
 
    else { cout << "something wrong at ThirdLeptonVeto veto Function !!!!" << endl; }
+
    return third_veto;
 }
 void ssb_analysis::LeptonOrder()
@@ -5044,6 +2491,7 @@ void ssb_analysis::JetSelector()
             if ( (*TJet).Pt() < 30. ){cout << "Something wrong " << endl;}
          }
       }
+
       ////////////////////////////////////////
       /// For JES Systematic with Method 2 ///
       ////////////////////////////////////////
@@ -5145,6 +2593,8 @@ void ssb_analysis::JetSelector()
       v_jetresdn_TL = v_jet_TL;
       v_jetresup_TL = v_jet_TL;
    }
+
+   return;
 }
 void ssb_analysis::JetCleaning(std::vector<int> v_jidx_cand, std::vector<TLorentzVector*>v_jtl_cand, std::vector<int>& v_jidx, std::vector<TLorentzVector*>&v_jtl )
 {
@@ -5186,6 +2636,7 @@ void ssb_analysis::JetCleaning(std::vector<int> v_jidx_cand, std::vector<TLorent
          v_jtl.push_back( v_jtl_cand.at(i) );
       }
    }
+   return;
 }
 bool ssb_analysis::JetCleaning(TLorentzVector* jet_)
 {
@@ -5242,6 +2693,7 @@ void ssb_analysis::JetDefiner()
          if ( v_jetresdn_TL.size() > 1 ) Jet2JERDn = v_jetresdn_TL[1]; 
       }
    }
+   return;
 }
 void ssb_analysis::METDefiner()
 {
@@ -5251,7 +2703,9 @@ void ssb_analysis::METDefiner()
    MetJESDn = new TLorentzVector();
    MetJERUp = new TLorentzVector();
    MetJERDn = new TLorentzVector();
-   /// For Data, We don't need to apply JES systematic ///   
+   /// For Data, We don't need to apply JES systematic ///  
+   Met = (TLorentzVector*)MET->At(0);  
+   /*
    if (TString(FileName_).Contains( "Data" ))
    {
       Met =  (TLorentzVector*)METMUEGCleanCor->At(0); 
@@ -5304,7 +2758,7 @@ void ssb_analysis::METDefiner()
          MetJERUp = METSmear( v_jetdpt_resup, v_jetdpx_resup, v_jetdpy_resup, MetJERUp );
          MetJERDn = METSmear( v_jetdpt_resdn, v_jetdpx_resdn, v_jetdpy_resdn, MetJERDn );
       }
-   }
+   }*/
 }
 
 TLorentzVector* ssb_analysis::METSmear(std::vector<double> v_dpt, std::vector<double> v_dpx, std::vector<double> v_dpy, TLorentzVector* met_ )
@@ -5386,8 +2840,9 @@ void ssb_analysis::BDsicApply()
    v_bjetresup_TL.clear();
    v_bjetresdn_TL.clear();
    nbtagged =0;
-   for (int ije = 0; ije < v_jet_idx.size(); ije++)
+/*   for (int ije = 0; ije < v_jet_idx.size(); ije++)
    {
+
        if (Jet_bDisc->at( v_jet_idx.at(ije) ) > bdisccut ) { nbtagged++;v_bjet_idx.push_back( v_jet_idx.at(ije) ); v_bjet_TL.push_back( v_jet_TL.at(ije) ); }
    }
    /// For JES Up 
@@ -5410,6 +2865,33 @@ void ssb_analysis::BDsicApply()
    {
        if (Jet_bDisc->at( v_jetresdn_idx.at(ije) ) > bdisccut ) { v_bjetresdn_idx.push_back( v_jetresdn_idx.at(ije) ); v_bjetresdn_TL.push_back( v_jetresdn_TL.at(ije) ); }
    }
+*/
+   // find index for "pfDeepFlavourJetTags:probb" , "pfDeepFlavourJetTags:probbb" , "pfDeepFlavourJetTags:problepb"
+   //cout << "Jet_bDisc->size() : " << Jet_bDisc->size() << endl;
+   //cout << "Jet_bDisc_Name->size() : " << Jet_bDisc_Name->size() << endl;
+   //cout << "Jet_bDisc_Value->size() : " << Jet_bDisc_Value->size() << endl;
+   int idx_probb = -1;
+   int idx_probbb = -1;
+   int idx_problepb = -1;
+   int idx_oldbtag = -1;// for debug//
+   idx_probb = find(Jet_bDisc_Name->begin(), Jet_bDisc_Name->end(), "pfDeepCSVJetTags:probb") - Jet_bDisc_Name->begin();
+   idx_probbb = find(Jet_bDisc_Name->begin(), Jet_bDisc_Name->end(), "pfDeepCSVJetTags:probbb") - Jet_bDisc_Name->begin();
+   //idx_problepb = find(Jet_bDisc_Name->begin(), Jet_bDisc_Name->end(), "pfDeepCSVJetTags:problepb") - Jet_bDisc_Name->begin();
+   idx_oldbtag = find(Jet_bDisc_Name->begin(), Jet_bDisc_Name->end(), "pfCombinedInclusiveSecondaryVertexV2BJetTags") - Jet_bDisc_Name->begin();
+   
+   //cout << "idx_probb : " << idx_probb << endl;
+   //cout << "idx_probbb : " << idx_probbb << endl;
+   //cout << "idx_problepb : " << idx_problepb << endl;
+   //cout << "idx_oldbtag : " << idx_oldbtag << endl;
+   for(int ijet = 0; ijet < v_jet_idx.size(); ++ijet){
+      //cout << "Jet_bDisc : " << Jet_bDisc->at(ijet) << endl;
+      //cout << "Jet_bDisc_Value: " << Jet_bDisc_Value->at(ijet*14 + idx_oldbtag) << endl;
+      double btag_= Jet_bDisc_Value->at( ijet*14 + idx_probb ) + Jet_bDisc_Value->at( ijet*14 + idx_probbb ); //+ Jet_bDisc_Value->at( ijet*14 + idx_problepb );
+      //cout << "btag_ " << btag_ << endl;
+      if ( btag_ > bdisccut ) { nbtagged++; v_bjet_idx.push_back( v_jet_idx.at(ijet) ); v_bjet_TL.push_back( v_jet_TL.at(ijet) ); }
+   }
+
+ //itJet.bDiscriminator("pfDeepFlavourJetTags:probb") + itJet.bDiscriminator("pfDeepFlavourJetTags:probbb") + itJet.bDiscriminator("pfDeepFlavourJetTags:problepb");
 
 }
 //B Jet Cut : step 5

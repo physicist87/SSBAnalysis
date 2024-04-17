@@ -83,12 +83,17 @@ void RocRes::dumpParams(){
 
 	
 void RocRes::init(std::string filename){
+    cout << "sk in init(std::string filename) " << endl;
     std::ifstream in(filename.c_str());
+    cout << "sk 31 " << endl;
     char tag[4];
     int type, sys, mem, isdt, var, bin;	
     std::string s;
+    cout << "sk 31 filename : " << filename << endl;
     while(std::getline(in, s)){
+    cout << "sk 32 " << endl;
 	std::stringstream ss(s); 
+        cout << "sk 32p1 " << endl;
 	if(s.substr(0,4)=="RMIN")       ss >> tag >> NMIN;
 	else if(s.substr(0,4)=="RTRK")  ss >> tag >> NTRK;
 	else if(s.substr(0,4)=="RETA")  {
@@ -119,13 +124,16 @@ void RocRes::init(std::string filename){
 		if(isdt==1) for(int i=0; i<NETA; ++i) ss >> kDat[i];  
 	    }
 	}
+        cout << "sk 32p2 " << endl;
     }
 
+    cout << "sk 33 " << endl;
     for(int H=0; H<NETA; ++H){
 	for(int F=0; F<NTRK; ++F){
 	    cb[H][F].init(0.0, width[H][F], alpha[H][F], power[H][F]);
 	}
     }
+    cout << "sk 34 " << endl;
     in.close();
 }
 
@@ -204,7 +212,9 @@ RocOne::RocOne(){
 }
 
 RocOne::RocOne(std::string filename, int iTYPE, int iSYS, int iMEM){
+    cout << "RocOne : " << filename << " iTYPE : " << iTYPE << " iSYS " << iSYS << " iMEM : " <<iMEM  << endl;
     init(filename, iTYPE, iSYS, iMEM);
+    cout << "After " <<iMEM  << endl;
 }
 
 
@@ -246,16 +256,19 @@ void RocOne::init(std::string filename, int iTYPE, int iSYS, int iMEM){
     reset();
 
     RR.init(filename);
-
+    cout << "sk 21 " << endl;
     std::ifstream in(filename.c_str());
+    cout << "sk 22 " << endl;
     char tag[4];
     int type, sys, mem, isdt, var, bin;	
 
     bool initialized=false;
 
     std::string s;
+    cout << "sk 23 " << endl;
     while(std::getline(in, s)){
 	std::stringstream ss(s); 
+    cout << "sk 24 " << endl;
 	if(s.substr(0,4)=="CPHI")       {
 	    ss >> tag >> NPHI;
 	    DPHI=2*TMath::Pi()/NPHI;
@@ -283,6 +296,7 @@ void RocOne::init(std::string filename, int iTYPE, int iSYS, int iMEM){
 	    }
 	}
     }
+    cout << "sk 26 " << endl;
     if(!initialized) std::cout << "Problem with input file: " << filename << std::endl;
     in.close();
 }
@@ -332,6 +346,7 @@ double RocOne::kGenSmear(double pt, double eta, double v, double u, RocRes::TYPE
 RoccoR::RoccoR(){}
 
 RoccoR::RoccoR(std::string dirname){
+    cout << "sk RoccoR in 1" << endl;
     init(dirname);
 }
 
@@ -339,31 +354,46 @@ RoccoR::RoccoR(std::string dirname){
 void 
 RoccoR::init(std::string dirname){
 
+    cout << "sk RoccoR in 2" << endl;
     std::string filename=Form("%s/config.txt", dirname.c_str());
 
+    cout << "sk RoccoR in 3" << endl;
     std::ifstream in(filename.c_str());
+    cout << "sk RoccoR in 4" << endl;
     std::string s;
     std::string tag;
     int si;
     int sn;
     while(std::getline(in, s)){
+    cout << "sk RoccoR in 5" << endl;
 	std::stringstream ss(s); 
+    cout << "sk RoccoR in 6" << endl;
 	ss >> tag >> si >> sn; 
+    cout << "sk RoccoR in 7" << endl;
 	std::vector<RocOne> v;
 	for(int m=0; m<sn; ++m){
+    cout << "sk RoccoR in 8" << endl;
 	    std::string inputfile=Form("%s/%d.%d.txt", dirname.c_str(), si, m);
+            cout << "inputfile : " << inputfile << endl;
+    cout << "sk RoccoR in 9" << endl;
 	    if(gSystem->AccessPathName(inputfile.c_str())) {
+    cout << "sk RoccoR in 10" << endl;
 		std::cout << Form("Missing %8d %3d, using default instead...", si, m) << std::endl;  
+    cout << "sk RoccoR in 11" << endl;
 		v.push_back(RocOne(Form("%s/%d.%d.txt", dirname.c_str(),0,0),0,0,0));
 	    }
 	    else{
+    cout << "sk RoccoR in 10p1" << endl;
+            cout << "nono inputfile : " << inputfile << endl;
 		v.push_back(RocOne(inputfile, 0, si, m));
+    cout << "sk RoccoR in 11p1" << endl;
 	    }
 	}
 	RC.push_back(v);
     }
 
     in.close();
+    cout << "sk RoccoR in 12" << endl;
 }
 
 RoccoR::~RoccoR(){}
