@@ -1,16 +1,13 @@
-# This packages are used for TOP-18-007. 
+# This packages are used for UL (Run2 Full). 
 
-Please do compile before running codes/packages. 
+This package is based on ROOT. Please proceed with the ROOT setup via cvmfs. \\
 
-Please install CMSSW_8_0_26 first. 
+source /cvmfs/sft.cern.ch/lcg/views/LCG_102/x86_64-centos7-gcc11-opt/setup.sh \\
 
-And then excute complie and run command. 
+How to complie \\
 
+make -f Makefile_ssb \\
 
-How to complie
+Simple Runing \\
 
-make -f Makefile_ssb 
-
-Simple Runing 
-
-./run_ssb_check.sh 
+./run_ssb_check.sh \\
