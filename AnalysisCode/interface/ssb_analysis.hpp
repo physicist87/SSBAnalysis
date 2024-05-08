@@ -278,6 +278,8 @@ class ssb_analysis : public SSBTree
 
       //Using Total Event Number//
       TString UsingTotEnv;
+      //Xsec. Tables//
+      TString XsecTable_;
 
       // Type of Systematics
       std::vector<TString> v_SystType;
@@ -950,6 +952,7 @@ ssb_analysis::ssb_analysis(TTree *tree)
    Lumi         = SSBConfReader->GetNumber( "Luminosity" ); // 8TeV or 13TeV
    Decaymode    = SSBConfReader->GetText( "Channel" ); // Channel
    UsingTotEnv  = SSBConfReader->GetText( "UsingTotalEvent" ); // TotalEvent option
+   XsecTable_   = SSBConfReader->GetText( "XSecTablesName" ); // TotalEvent option
    TString RunPeriod = SSBConfReader->GetText( "RunRange" ); 
 
    /// Luminosity for BCDEF or GH or All ...

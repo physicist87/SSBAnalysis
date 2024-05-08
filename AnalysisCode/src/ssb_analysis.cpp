@@ -321,7 +321,7 @@ void ssb_analysis::TLVInitial()
 void ssb_analysis::Loop( char *logfile )
 {
 
-   GetTotalEvent();
+   //GetTotalEvent();
    //////////
    if (fChain == 0) return;
    //////////
@@ -338,7 +338,7 @@ void ssb_analysis::Loop( char *logfile )
    /// Check Total Event
    cout << "Ntuple Total Event Check !! " << NtupletotalEvent << endl;
 
-   //MCSF();
+   MCSF();
    cout << "MC_SF Check !! " << mc_sf_ << endl;
 
    Np_eventw_2 = 0.0;
@@ -958,6 +958,11 @@ void ssb_analysis::End()
 void ssb_analysis::SetInputFileName( char *inname )
 {
    FileName_ = inname;
+   char unsco_ = '_';
+   Size_t unscoIndex = FileName_.Last(unsco_);
+   FileName_.Remove(unscoIndex, FileName_.Length());
+   //cout << "FileName_ : " << FileName_ << endl;
+   
 }
 void ssb_analysis::SetOutputFileName(char *outname)
 {   
@@ -1043,7 +1048,7 @@ void ssb_analysis::GetTotalEvent()
 }
 
 // MC scale factor function
-void ssb_analysis::MCSF()
+/*void ssb_analysis::MCSF()
 {
 
 //   double lumi = 19.6*1000;
@@ -1141,6 +1146,55 @@ void ssb_analysis::MCSF()
    } 
    else {cout << "MCSF error " << endl; }
    cout << "mc_sf_ : " << mc_sf_ << endl;
+}*/
+
+void ssb_analysis::MCSF()
+{
+   if (FileName_.Contains("Data")){ mc_sf_ = 1.; return; }
+   /// Open Xsec Tables ///
+   FILE *xsecs_;
+   char sampleName[1000];
+   double xsec_ = -1.;
+   double br_ = -1.; 
+   int totalevt_  = -1.; 
+   int positive_  = -1.; 
+   int negative_  = -1.; 
+   int posi_nega_ = -1.; 
+   string xsec_dir= "./xsecAndsample/";
+   string xsec_filePath = xsec_dir+ XsecTable_.Data();
+   //cout << "xsec_filePath : " << xsec_filePath << endl;
+   /// SampleName | TotalEvt | Positive+Negative | Xsection | Branching Fraction |
+   xsecs_ = fopen(xsec_filePath.c_str(),"r");
+   map<string, int> m_sam_totalevt;
+   map<string, double> m_sam_xsec;
+   map<string, double> m_sam_br;
+   map<string, int> m_sam_positive;
+   map<string, int> m_sam_negative;
+   map<string, int> m_sam_posi_nega;
+   if (xsecs_!=NULL) 
+   { 
+      //cout << "Load Xsection Table!" << endl;
+      while (fscanf(xsecs_, "%s %d %d %d %d %lf %lf\n", sampleName, &totalevt_, &positive_, &negative_, &posi_nega_, &xsec_, &br_ ) != EOF)
+      {
+         /*cout 
+         << "sampleName : " << sampleName << " totalevt_ : " << totalevt_
+         << " positive_ " << positive_ << " negative_ : " << negative_ 
+         << " posi_nega_ " << posi_nega_ << " xsec_ : " << xsec_ 
+         << " br_ " << br_ 
+         << endl;*/
+         m_sam_totalevt[sampleName] = totalevt_;
+         m_sam_positive[sampleName] = positive_;
+         m_sam_negative[sampleName] = negative_;
+         m_sam_posi_nega[sampleName] = posi_nega_;
+         m_sam_xsec[sampleName] = xsec_;
+         m_sam_br[sampleName] = br_;
+      }
+      fclose(xsecs_);
+   }
+   else {return;} 
+   //cout << "Lumi : " << Lumi << endl;
+   double lumi = Lumi/1000000;
+   mc_sf_ = (m_sam_xsec[FileName_.Data()]*m_sam_br[FileName_.Data()]*lumi)/m_sam_posi_nega[FileName_.Data()];
 }
 
 // Apply MC SF To Event //
