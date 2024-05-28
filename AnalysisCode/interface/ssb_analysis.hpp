@@ -109,6 +109,7 @@ class ssb_analysis : public SSBTree
 
       // Trigger Requirement Function
       bool Trigger();
+      bool SelTrigger(vector<string>);
 
       // Lepton Selection Funtion
       TLorentzVector* ApplyRocCor(TLorentzVector* tmp,int index_);
@@ -267,6 +268,7 @@ class ssb_analysis : public SSBTree
       // Center Of Energy
       TString CenOfE;
   
+      TString RunPeriod; 
       // Luminosity
       double Lumi;
       
@@ -305,7 +307,8 @@ class ssb_analysis : public SSBTree
       //to get trigger information from config.
       int num_metfilt;
       //to get trigger information from config.
-      int num_trig;
+      int num_dleptrig;
+      int num_sleptrig;
       TString TrigSFSys;
       /// Muon Energy (Momentum) Sys. ///
       TString MuEnSys;
@@ -476,6 +479,8 @@ class ssb_analysis : public SSBTree
       /// vector for variables. ///
       /////////////////////////////
       std::vector<std::string> v_METFilterName; // METFilterName 
+      std::vector<std::string> DLtrigName; // trigger 
+      std::vector<std::string> SLtrigName; // trigger 
       std::vector<std::string> trigName; // trigger 
       std::vector<int> v_lepton_idx; // Indecies of lepton
       std::vector<int> v_muon_idx; // Indecies of muon
@@ -944,7 +949,8 @@ ssb_analysis::ssb_analysis(TTree *tree)
    SSBConfReader->ReadFile("./configs/analysis_config.config");
    SSBConfReader->ReadVariables();
    num_metfilt = SSBConfReader->Size( "METFilters" );
-   num_trig = SSBConfReader->Size( "trigger" );
+   num_dleptrig = SSBConfReader->Size( "dileptrigger" );
+   num_sleptrig = SSBConfReader->Size( "singleleptrigger" );
 
    SSBConfReader->PrintoutVariables();
 
@@ -953,7 +959,7 @@ ssb_analysis::ssb_analysis(TTree *tree)
    Decaymode    = SSBConfReader->GetText( "Channel" ); // Channel
    UsingTotEnv  = SSBConfReader->GetText( "UsingTotalEvent" ); // TotalEvent option
    XsecTable_   = SSBConfReader->GetText( "XSecTablesName" ); // TotalEvent option
-   TString RunPeriod = SSBConfReader->GetText( "RunRange" ); 
+   RunPeriod = SSBConfReader->GetText( "RunRange" ); 
 
    /// Luminosity for BCDEF or GH or All ...
    double total_lumi = 0.0;
@@ -1003,11 +1009,20 @@ ssb_analysis::ssb_analysis(TTree *tree)
    // Trigger Information !!! ///
    //////////////////////////////
 
-   for(int i =0; i < num_trig; ++i)
+   for(int i =0; i < num_dleptrig; ++i)
    {
-      cout << SSBConfReader->GetText("trigger",i+1) << endl;
-      trigName.push_back( SSBConfReader->GetText("trigger",i+1) );
+      cout << SSBConfReader->GetText("dileptrigger",i+1) << endl;
+      DLtrigName.push_back( SSBConfReader->GetText("dileptrigger",i+1) );
+      trigName.push_back( SSBConfReader->GetText("dileptrigger",i+1) );
    }
+
+   for(int i =0; i < num_sleptrig; ++i)
+   {
+      cout << SSBConfReader->GetText("singleleptrigger",i+1) << endl;
+      SLtrigName.push_back( SSBConfReader->GetText("singleleptrigger",i+1) );
+      trigName.push_back( SSBConfReader->GetText("singleleptrigger",i+1) );
+   }
+
 
    //cout << " JER ??? "<< SSBConfReader->GetBool("DoJER") << endl;
    /// JERSys_

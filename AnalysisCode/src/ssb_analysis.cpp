@@ -1494,7 +1494,7 @@ void ssb_analysis::PileUpReWeightApply()
    double pu_weight_central = puweight->weight( PileUp_Count_Intime );
    double pu_weight_up = puweightup->weight( PileUp_Count_Intime );
    double pu_weight_dn = puweightdn->weight( PileUp_Count_Intime );
-
+   cout << "pu_weight_central : " << pu_weight_central << endl;
    if ( !TString(FileName_).Contains( "Data") )
    {
 //      puweight_ = puweight->weight( PileUp_Count_Intime );
@@ -1506,7 +1506,7 @@ void ssb_analysis::PileUpReWeightApply()
    }
    evt_weight_ = evt_weight_*puweight_; } // apply PileUpReweight //
    else {evt_weight_ = 1;}
-   if ( isAllSyst == true )
+/*   if ( isAllSyst == true )
    {
       for( int i =0; i < v_SystFullName.size(); ++i )
       {
@@ -1529,7 +1529,7 @@ void ssb_analysis::PileUpReWeightApply()
          }
          m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
       }
-   }
+   }*/
 }
 void ssb_analysis::L1PreFireApply()
 {
@@ -1720,48 +1720,25 @@ bool ssb_analysis::METFilterAPP()
 }
 
 // Trigger Requirement Function
-bool ssb_analysis::Trigger()
+bool ssb_analysis::SelTrigger(vector<string> v_sel)
 {
-   /// Variable for Trigger Function
+   TString trgName = "";
    int ptrigindex;
    bool trigpass;
 
+   bool passtrig_;
    ptrigindex =0;
-   trigpass = false;
-   TString trgName = ""; 
-//   if (!TString(FileName_).Contains( "Data" ) ) { trigpass = true; return trigpass;}
+
    for (int i =0; i < Trigger_Name->size(); i++)
    {
 //      cout << "Ntuple Triggers : " <<  Trigger_Name->at(i) << endl; 
-      for (int j = 0; j < trigName.size(); j++)
+      for (int j = 0; j < v_sel.size(); j++)
       {
-         trgName = trigName[j];
-         if (TString(Decaymode).Contains( "dimuon" ) ) {
-            if ( TString(FileName_).Contains( "Run2016H" ) ) 
-            { 
-               if (trgName.Contains("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_v") ||
-                   trgName.Contains("HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_v") ) {continue;}
-            }
-            else {
-               if (trgName.Contains("HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ_v") ||
-                   trgName.Contains("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_v") ) {continue;}
-            }
-         }
-         if (TString(Decaymode).Contains( "muel" ) ) {
-            if ( TString(FileName_).Contains( "Run2016H" ) ) 
-            { 
-               if (trgName.Contains("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v") ||
-                   trgName.Contains("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v") ) {continue;}
-            }
-            else {
-               if (trgName.Contains("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v") ||
-                   trgName.Contains("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v") ) {continue;}
-            }
-         }
-
-         if ( TString( Trigger_Name->at(i) ).Contains( trigName.at(j) ) )//TString clone 
+         trgName = v_sel[j];
+   
+         if ( TString( Trigger_Name->at(i) ).Contains( v_sel.at(j) ) )//TString clone 
          {
-//            cout << "trigName.at(j) ?" << trigName.at(j) << endl;
+//            cout << "v_sel.at(j) ?" << v_sel.at(j) << endl;
             if ( ( Trigger_isPass->at(i)  ) && 
                 !( Trigger_isError->at(i) ) && 
                  ( Trigger_isRun->at(i) )      ) 
@@ -1770,6 +1747,97 @@ bool ssb_analysis::Trigger()
       }
    }
    if ( ptrigindex > 0 ) { trigpass = true; }
+   return passtrig_; 
+
+}
+bool ssb_analysis::Trigger()
+{
+   /// Variable for Trigger Function
+   bool singleTrig_ = false;
+   bool doubleTrig_ = false;
+   bool ispassselTrig_ = false;
+   bool ispassvetoTrig_ = false;
+   bool trigpass = false;
+   vector<string> seltrigName;
+   vector<string> vetotrigName;
+ 
+   if (!TString(FileName_).Contains( "Data" ) ) { 
+       //trigpass = true; return trigpass;
+       ispassvetoTrig_ = false; 
+       seltrigName = trigName;
+       trigpass = SelTrigger(seltrigName);
+   }
+   else {
+      // Set veto trigger & selected trigger //
+      // Channel Index //
+      if ( RunPeriod.Contains("2018") )/// Only 2018, SingleEG and Double EG combined 
+      {
+         if (TString(Decaymode).Contains("dimuon")){ // Dimuon // 
+            if ( TString(FileName_).Contains( "Single") ) {
+               seltrigName = SLtrigName;
+               vetotrigName = DLtrigName;
+               ispassselTrig_ = SelTrigger(seltrigName);
+               ispassvetoTrig_ = SelTrigger(vetotrigName);
+            }
+            else if( TString(FileName_).Contains( "Double") ) {
+               seltrigName = DLtrigName;
+               vetotrigName = SLtrigName;
+               ispassselTrig_ = SelTrigger(seltrigName);
+               ispassvetoTrig_ = SelTrigger(vetotrigName);
+            }
+            else { cout << "Check out FileName_ in Trigger ()" << endl;}
+         }
+         else if(TString(Decaymode).Contains("muel")) {
+            if ( TString(FileName_).Contains( "MuonEG") ) {
+               seltrigName = DLtrigName;
+               vetotrigName = SLtrigName;
+               ispassselTrig_ = SelTrigger(seltrigName);
+               ispassvetoTrig_ = SelTrigger(vetotrigName);
+            }
+            else if( TString(FileName_).Contains( "EGamma") ) {
+               seltrigName = SLtrigName;
+               vetotrigName = DLtrigName;
+               ispassselTrig_ = SelTrigger(seltrigName);
+               ispassvetoTrig_ = SelTrigger(vetotrigName);
+            }
+            else { cout << "Check out FileName_ in Trigger ()" << endl;}
+         }
+         else if(TString(Decaymode).Contains("dielec")) { 
+            //seltrigName = DLtrigName;
+            //vetotrigName = SLtrigName;
+            if( TString(FileName_).Contains( "EGamma") ) {
+               singleTrig_ = false;
+               doubleTrig_ = false;
+               singleTrig_ = SelTrigger(SLtrigName);
+               doubleTrig_ = SelTrigger(DLtrigName);
+               if (singleTrig_&&(!doubleTrig_)) {trigpass = true;}
+               else if ((!singleTrig_)&&(doubleTrig_)) {trigpass = true;}
+               else {trigpass = false;}
+               ispassvetoTrig_ == false;
+            }
+         }
+         else { cout << "Check out Decaymode in 2018-Trigger()" << endl; }
+      }
+      else {/// 2016 (AVP, NonAPV) && 2017 
+         if ( TString(FileName_).Contains( "Single") ) {
+            seltrigName = SLtrigName;
+            vetotrigName = DLtrigName;
+            ispassselTrig_ = SelTrigger(seltrigName);
+            ispassvetoTrig_ = SelTrigger(vetotrigName);
+         }
+         else if( TString(FileName_).Contains( "Double") || TString(FileName_).Contains( "MuonEG")) {
+            seltrigName = DLtrigName;
+            vetotrigName = SLtrigName;
+            ispassselTrig_ = SelTrigger(seltrigName);
+            ispassvetoTrig_ = SelTrigger(vetotrigName);
+         }
+         else { cout << "Check out FileName_ in Trigger ()" << endl;}
+
+      }
+
+      
+      if (ispassvetoTrig_ == true) {trigpass = false;}
+   } 
    return trigpass;
 }
 // Function of Muon Rocheser Correction //
