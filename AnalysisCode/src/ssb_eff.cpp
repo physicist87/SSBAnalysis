@@ -16,17 +16,19 @@
 
 using namespace std;
 
-SSBEffCal::SSBEffCal()                                                                                                                
+SSBEffCal::SSBEffCal(string confpath)
 {
-   SSBEffReader = new TextReader();
+/*   SSBEffReader = new TextReader();
    SSBEffReader->ReadFile("./configs/DimuonCorr.txt");
    SSBEffReader->ReadVariables();
-
+*/
+   cout << "confpath :" << confpath << endl;
    SSBConfigReader = new TextReader();
-   SSBConfigReader->ReadFile("./configs/analysis_config.config");
+   //SSBConfigReader->ReadFile("./configs/analysis_config.config");
+   SSBConfigReader->ReadFile(confpath);
    SSBConfigReader->ReadVariables();
    dimu_eff.clear();
-   getEff();
+   //getEff();
 
    RunPeriod     = SSBConfigReader->GetText( "RunRange" );
 
@@ -108,64 +110,52 @@ SSBEffCal::SSBEffCal()
    BTagCSV_File = "./btagInfo/" + SSBConfigReader->GetText( "BTaggingCSVFile" );
    for (int i = 0; i < SSBConfigReader->Size("BTaggingCSVFiles"); ++i)
    {
+      
       BTagCSV_File = "./btagInfo/" + SSBConfigReader->GetText( "BTaggingCSVFiles",i+1 );
       cout << "BTagCSV_File : " << BTagCSV_File << endl;
-      calib       = new BTagCalibration("csvv2", BTagCSV_File);
-      if      ( TString(jetbtag).Contains( "pfCSVV2L" ) )
-      { 
-         reader       = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "mujets", BTagSFSys.Data()); 
-         readerup     = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "mujets", "up" );
-         readerdown   = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "mujets", "down");
-         readerlf     = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "incl", BTagSFSys.Data()); 
-         readerlfup   = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "incl", "up"); 
-         readerlfdown = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "incl", "down"); 
-      }
-      else if ( TString(jetbtag).Contains( "pfCSVV2M" ) )
+      cout << "Good sk1 -1"<< endl;
+      calib       = new BTagCalibration("deepcsv", BTagCSV_File);
+      cout << "Good sk1 -2"<< endl;
+      if (calib == NULL) {cout << "? calib error : "  << endl;}
+      else {cout << "Good"<< endl;}
+      if      ( TString(jetbtag).Contains( "deepCSVL" ) )
       {
-         reader       = new BTagCalibrationReader(calib, BTagEntry::OP_MEDIUM, "mujets", BTagSFSys.Data()); 
-         readerup     = new BTagCalibrationReader(calib, BTagEntry::OP_MEDIUM, "mujets", "up" );
-         readerdown   = new BTagCalibrationReader(calib, BTagEntry::OP_MEDIUM, "mujets", "down");
-         readerlf     = new BTagCalibrationReader(calib, BTagEntry::OP_MEDIUM, "incl", BTagSFSys.Data()); 
-         readerlfup   = new BTagCalibrationReader(calib, BTagEntry::OP_MEDIUM, "incl", "up"); 
-         readerlfdown = new BTagCalibrationReader(calib, BTagEntry::OP_MEDIUM, "incl", "down"); 
+ 
+         //reader       = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "mujets", BTagSFSys.Data()); 
+         //reader       = new BTagCalibrationReader(BTagEntry::OP_LOOSE, BTagSFSys.Data()); 
+         reader  = new BTagCalibrationReader(BTagEntry::OP_LOOSE, "central", { "up", "down" });
+      cout << "Good sk1"<< endl;
       }
-      else if ( TString(jetbtag).Contains( "pfCSVV2T" ) )
+      else if ( TString(jetbtag).Contains( "deepCSVM" ) )
       {
-         reader       = new BTagCalibrationReader(calib, BTagEntry::OP_TIGHT , "mujets", BTagSFSys.Data()); 
-         readerup     = new BTagCalibrationReader(calib, BTagEntry::OP_TIGHT, "mujets", "up" );
-         readerdown   = new BTagCalibrationReader(calib, BTagEntry::OP_TIGHT, "mujets", "down");
-         readerlf     = new BTagCalibrationReader(calib, BTagEntry::OP_TIGHT, "incl", BTagSFSys.Data()); 
-         readerlfup   = new BTagCalibrationReader(calib, BTagEntry::OP_TIGHT, "incl", "up"); 
-         readerlfdown = new BTagCalibrationReader(calib, BTagEntry::OP_TIGHT, "incl", "down"); 
+         //reader       = new BTagCalibrationReader(BTagEntry::OP_MEDIUM, BTagSFSys.Data()); 
+         reader  = new BTagCalibrationReader(BTagEntry::OP_MEDIUM, "central", { "up", "down" });
+      cout << "Good sk2"<< endl;
+      }
+      else if ( TString(jetbtag).Contains( "deepCSVT" ) )
+      {
+         reader       = new BTagCalibrationReader(BTagEntry::OP_TIGHT, BTagSFSys.Data()); 
+         reader  = new BTagCalibrationReader(BTagEntry::OP_TIGHT, "central", { "up", "down" });
+      cout << "Good sk3"<< endl;
       }
       else {
          cout << "Couldn't Apply BTagging SF . Defalut is Loose" << endl;
-         reader       = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "mujets", BTagSFSys.Data() );
-         readerup     = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "mujets", "up" );
-         readerdown   = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "mujets", "down");
-         readerlf     = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "incl", BTagSFSys.Data()); 
-         readerlfup   = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "incl", "up"); 
-         readerlfdown = new BTagCalibrationReader(calib, BTagEntry::OP_LOOSE, "incl", "down"); 
+         reader       = new BTagCalibrationReader(BTagEntry::OP_LOOSE, BTagSFSys.Data() );
       }
       v_reader.push_back(reader);
-      v_readerup.push_back(readerup);
-      v_readerdown.push_back(readerdown);
-      v_readerlf.push_back(readerlf);
-      v_readerlfup.push_back(readerlfup);
-      v_readerlfdown.push_back(readerlfdown);
    }
-   if      ( TString(jetbtag).Contains( "pfCSVV2L" )  ){ 
+   if      ( TString(jetbtag).Contains( "deepCSVL" )  ){ 
       H_btageff_fl[0]  = (TH2D*) f_btag_loose[0]->Get("BTagEff_Loose_b"); 
       H_btageff_fl[1]  = (TH2D*) f_btag_loose[1]->Get("BTagEff_Loose_c"); 
       H_btageff_fl[2]  = (TH2D*) f_btag_loose[2]->Get("BTagEff_Loose_udsg");
    }
-   else if ( TString(jetbtag).Contains( "pfCSVV2M" )  ){
+   else if ( TString(jetbtag).Contains( "deepCSVM" )  ){
       H_btageff_fl[0]  = (TH2D*) f_btag_medium[0]->Get("BTagEff_Medium_b"); 
       H_btageff_fl[1]  = (TH2D*) f_btag_medium[1]->Get("BTagEff_Medium_c"); 
       H_btageff_fl[2]  = (TH2D*) f_btag_medium[2]->Get("BTagEff_Medium_udsg"); 
       cout << "H_btageff_fl ? " << H_btageff_fl[0]->GetName() << endl; 
    }
-   else if ( TString(jetbtag).Contains( "pfCSVV2T" )  ){ 
+   else if ( TString(jetbtag).Contains( "deepCSVT" )  ){ 
       H_btageff_fl[0]  = (TH2D*) f_btag_tight[0]->Get("BTagEff_Tight_b"); 
       H_btageff_fl[1]  = (TH2D*) f_btag_tight[1]->Get("BTagEff_Tight_c"); 
       H_btageff_fl[2]  = (TH2D*) f_btag_tight[2]->Get("BTagEff_Tight_udsg"); 
@@ -190,7 +180,7 @@ SSBEffCal::~SSBEffCal()
    delete calib;
 }   
 
-void SSBEffCal::getEff()
+/*void SSBEffCal::getEff()
 {
    dimu_eff.clear();
 
@@ -198,9 +188,9 @@ void SSBEffCal::getEff()
    {
       dimu_eff.push_back(SSBEffReader->GetNumber(Form("DoubleMuonCorr_%d",i)) );
    }
-}
+}*/
 //double SSBEffCal::DoubleMuon_Eff( double mu1eta, double mu2eta ) 
-double SSBEffCal::DoubleMuon_Eff( TLorentzVector* lep1, TLorentzVector* lep2 ) 
+/*double SSBEffCal::DoubleMuon_Eff( TLorentzVector* lep1, TLorentzVector* lep2 ) 
 { 
    
    eff   = 1.0;
@@ -272,7 +262,7 @@ double SSBEffCal::DoubleMuon_Eff( TLorentzVector* lep1, TLorentzVector* lep2 )
    else {eff = 1.0;}
    return eff;
 }
-
+*/
 double SSBEffCal::DoubleMuon_EffROOT( TLorentzVector* lep1, TLorentzVector* lep2, TString muidsys, TString muisosys, TString tracksys )
 {
    double mu1id;
@@ -1024,6 +1014,48 @@ double SSBEffCal::Btagging_EvenWeight( std::vector<double>v_jetpt, std::vector<d
    }
 //   return bcsv_sf_;
 }
+
+double SSBEffCal::Btagging_EvenWeightv2( std::vector<double>v_jetpt, std::vector<double> v_jeteta, std::vector<double> v_btagdisc, double btagcut, std::vector<int> v_jetf, string Syst)
+{
+   double btag_evt_weight_ = 1;
+   double JetMaxPt = 999;
+   double bcsv_sf_;
+   double btag_eff_;
+   double p_mc = 1.;
+   double p_data = 1.;
+   BTagEntry::JetFlavor jflavor;
+   if ( v_jetpt.size() != v_jeteta.size() || 
+        v_jetpt.size() != v_btagdisc.size()  ){ cout << "v_jeteta, v_jetpt and v_btagdisc have different size for each other" << endl; return 1.0;}
+   else {
+
+
+      for ( int i =0; i< v_jetpt.size(); ++i )
+      {
+         double bjetpt_ = v_jetpt[i];
+         // Set Max Pt 
+         if ( bjetpt_ > JetMaxPt ){ bjetpt_ = JetMaxPt; }
+
+         if (v_jetf[i] == 5){jflavor = BTagEntry::FLAV_B;  }
+         else if (v_jetf[i] == 4){jflavor = BTagEntry::FLAV_C;  }
+         else { jflavor = BTagEntry::FLAV_UDSG; }
+
+         btag_eff_ = Btagging_Eff(v_jetpt[i], v_jeteta[i], jetbtag, BTagEffSys, v_jetf[i]);
+         
+         if ( v_btagdisc[i] > btagcut ){
+            p_mc *= btag_eff_;
+            //p_data *= (btag_eff_*reader->eval(jflavor,v_jeteta[i],bjetpt_));
+            p_data *= (btag_eff_*reader->eval_auto_bounds(Syst,jflavor,v_jeteta[i], v_jetpt[i]));
+         }
+         else {
+            p_mc *= ( 1-btag_eff_ );
+            p_data *= (1- (btag_eff_*reader->eval_auto_bounds(Syst,jflavor, v_jeteta[i], v_jetpt[i])));
+         } 
+      }
+      btag_evt_weight_  = p_data/p_mc;
+      return btag_evt_weight_;
+   }
+}
+
 double SSBEffCal::Btagging_EvenWeightSys( std::vector<double>v_jetpt, std::vector<double> v_jeteta, std::vector<double> v_btagdisc, double btagcut, std::vector<int> v_jetf, TString sys_)
 {
    double btag_evt_weight_ = 1;

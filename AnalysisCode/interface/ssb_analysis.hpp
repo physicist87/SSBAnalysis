@@ -42,13 +42,14 @@ class ssb_analysis : public SSBTree
 {
    public:
       //declare functions
-      ssb_analysis(TTree *tree=0);
+      //ssb_analysis(TTree *tree=0);
+      ssb_analysis(TTree *tree=0, string ConfName="");
       virtual ~ssb_analysis();
 
       //basic frame
       virtual void Loop( char *logfile );
       void GetNtupleTotalEvent( unsigned int totevent );
-      void Start( int genLoopon );
+      void Start();
       void End();
 
       //user define functions
@@ -64,7 +65,6 @@ class ssb_analysis : public SSBTree
       void ClearVectors();
 
       // Scale Factor function
-      void GetTotalEvent();
       void MCSF();
       void MCSFApply();
       void GenWeightApply();
@@ -86,8 +86,6 @@ class ssb_analysis : public SSBTree
       double CalTopPtRewight(TString Opt_);
       void TopPtReweightApply();
       TLorentzVector* FindGenPar(int pdgid_);
-
-      void Weight();
 
       // Read config files function
       void ReadConfigs();
@@ -249,8 +247,6 @@ class ssb_analysis : public SSBTree
 //      BTagCalibration *calib; 
 //      BTagCalibrationReader *reader;
       edm::LumiReWeighting *puweight;
-      edm::LumiReWeighting *puweightup;
-      edm::LumiReWeighting *puweightdn;
  
       //TextReader from Jaehoon.
       TextReader *SSBConfReader;
@@ -936,7 +932,7 @@ class ssb_analysis : public SSBTree
 
 #ifdef ssb_analysis_cxx
 
-ssb_analysis::ssb_analysis(TTree *tree)
+ssb_analysis::ssb_analysis(TTree *tree, string confName)
 {
    if (tree == 0)
    {
@@ -946,7 +942,11 @@ ssb_analysis::ssb_analysis(TTree *tree)
    
    // Text Reader from Jaehoon.
    SSBConfReader = new TextReader();
-   SSBConfReader->ReadFile("./configs/analysis_config.config");
+   string confDir = "./configs/";
+   string confpath = "";
+   confpath = confDir+confName;
+   //SSBConfReader->ReadFile("./configs/analysis_config.config");
+   SSBConfReader->ReadFile(confpath);
    SSBConfReader->ReadVariables();
    num_metfilt = SSBConfReader->Size( "METFilters" );
    num_dleptrig = SSBConfReader->Size( "dileptrigger" );
@@ -1077,7 +1077,7 @@ ssb_analysis::ssb_analysis(TTree *tree)
    bAndbBarDil = SSBConfReader->GetBool( "bAndBDilu" );
 
    SetConfig();
-   SSBEffcal   = new SSBEffCal();
+   SSBEffcal   = new SSBEffCal(confpath);
    ssbflsolver = new TtFullLepKinSolver( topmass_begin, topmass_end, topmass_step_, nupars_);
    ssbcpviol   = new SSBCPViol();
    puweight      = new edm::LumiReWeighting("./pileuInfo/" + PileUpMCFile,
@@ -1085,15 +1085,6 @@ ssb_analysis::ssb_analysis(TTree *tree)
                                             "pileup",                       
                                             "pileup" );
 
-   puweightup      = new edm::LumiReWeighting("./pileuInfo/" + PileUpMCFile,
-                                            "./pileuInfo/" + PileUpDATAFileUp,
-                                            "pileup",                       
-                                            "pileup" );
-
-   puweightdn      = new edm::LumiReWeighting("./pileuInfo/" + PileUpMCFile,
-                                            "./pileuInfo/" + PileUpDATAFileDown,
-                                            "pileup",                       
-                                            "pileup" );
 
    cutflowName[0] = "Step_0";
    cutflowName[1] = "Step_1" ;
@@ -1109,155 +1100,11 @@ ssb_analysis::ssb_analysis(TTree *tree)
    cout << "FactRenoSys : " << FactRenoSys << endl;
 
    pi = TMath::Pi();
-   //////////////////////////
-   /// For All Systematic ///
-   //////////////////////////
 
-   if (SSBConfReader->GetText( "isAllSys" ) == "False" || SSBConfReader->GetText( "isAllSys" ) == "false" ) {isAllSyst = false;}
-   else {isAllSyst = true;}
-
-   if (isAllSyst == true){
-      for (int i = 0; i < SSBConfReader->Size("Allsys"); ++i)
-      {
-         cout << SSBConfReader->GetText("Allsys",i+1) << endl;
-         TString sys_ = SSBConfReader->GetText("Allsys",i+1);
-         TString sysname_ = "";
-         v_SystType.push_back(sys_);
-         if ( TString(sys_).Contains( "Central" ) ) { sysname_ = "Central"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1; }
-         else if ( TString(sys_).Contains( "TrigSF" ) ) 
-         {
-            sysname_ = "TrigSFUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "TrigSFDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "LepID" ) ) 
-         {
-            sysname_ = "LepIDUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "LepIDDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "LepIso" ) )
-         {
-            sysname_ = "LepIsoUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1; 
-            sysname_ = "LepIsoDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "PileUp" ) )
-         {
-            sysname_ = "PileUpUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1; 
-            sysname_ = "PileUpDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "L1PreFire" ) )
-         {
-            sysname_ = "L1PreFireUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1; 
-            sysname_ = "L1PreFireDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "JetEn" ) ) 
-         {
-            sysname_ = "JetEnUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "JetEnDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "BTagSF" ) ) 
-         {
-            sysname_ = "BTagSFBHadUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "BTagSFBHadDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "BTagSFCHadUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "BTagSFCHadDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "BTagSFLFUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "BTagSFLFDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "BTagEff" ) ) 
-         {
-            sysname_ = "BTagEffBHadUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "BTagEffBHadDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "BTagEffCHadUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "BTagEffCHadDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "BTagEffLFUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "BTagEffLFDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "LepReco" ) ) 
-         {
-            sysname_ = "LepRecoUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "LepRecoDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "LepTrack" ) ) 
-         {
-            sysname_ = "LepTrackUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "LepTrackDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "FactReno" ) ) 
-         {
-            sysname_ = "FactReno_1"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "FactReno_2"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "FactReno_3"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "FactReno_4"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "FactReno_5"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "FactReno_6"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "FactReno_7"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "FactReno_8"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "JetRes" ) ) 
-         {
-            /// If you didn't select doJer option, we will skip this systematic study. ///
-            if ( dojer == true ) {
-               sysname_ = "JetResUp";   v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-               sysname_ = "JetResDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            }
-         }
-         else if ( TString(sys_).Contains( "PDF" ) ) 
-         {
-            /// If you didn't select doJer option, we will skip this systematic study. ///
-            int ipdf = 1;
-      
-            int ipdfmax = 0; 
-            int ipdfmaxset = 20; 
-            if ( TString(sys_).Contains( "Set1" ) )      {ipdf = 1; }
-            else if ( TString(sys_).Contains( "Set2" ) ) {ipdf = 21;}
-            else if ( TString(sys_).Contains( "Set3" ) ) {ipdf = 41;}
-            else if ( TString(sys_).Contains( "Set4" ) ) {ipdf = 61;}
-            else if ( TString(sys_).Contains( "Set5" ) ) {ipdf = 81;}
-            else if ( TString(sys_).Contains( "AlphaS" ) ) {ipdf = 101;ipdfmaxset =2;}
-            else {ipdf = 1; ipdfmaxset =1;} 
-            ipdfmax = ipdf+ipdfmaxset; 
-            for (; ipdf < ipdfmax; ++ipdf ){
-               sysname_ = Form("PDF_%d",ipdf); v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            }
-         }
-         else if ( TString(sys_).Contains( "Fragment" ) ) 
-         {
-            sysname_ = "FragmentCentral"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "FragmentUp"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "FragmentDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "FragmentPeterson"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "DecayTable" ) ) 
-         {
-            sysname_ = "DecayTableUp"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-            sysname_ = "DecayTableDown"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else if ( TString(sys_).Contains( "TopPt" ) ) 
-         {
-            sysname_ = "TopPtSys"; v_SystFullName.push_back(sysname_); m_Syst_EvtW[sysname_] = 1;
-         }
-         else {
-            v_SystFullName.push_back(sys_); m_Syst_EvtW[sys_] = 1;
-         }
-      
-      }
-   }
    idx_jecup = -2; 
    idx_jecdn = -2; 
    idx_jerup = -2; 
    idx_jerdn = -2; 
-   for (int i = 0; i < v_SystFullName.size(); ++i) 
-   {
-     v_SystEvt.push_back(1);// Event weight for systematics //
-     if ( v_SystFullName[i] == "JetEnUp" ) {idx_jecup=i;} 
-     if ( v_SystFullName[i] == "JetEnDown" ) {idx_jecdn=i;} 
-     if ( v_SystFullName[i] == "JetResUp" ) {idx_jerup=i;} 
-     if ( v_SystFullName[i] == "JetResDown" ) {idx_jerdn=i;} 
-   }
-   for (int i =0 ; i< v_SystFullName.size();++i){
-      cout << "v_SystFullName ["<<i<<"]: "<< v_SystFullName[i] << endl;
-   }
-   cout << "JetPtPhiDil : " << JetPtPhiDil << endl;
    //ReadDupleList();
    /// Get Info of Muon Correction ///
    ssbmucor = new RoccoR("./RoccoR/RoccoR2016aUL.txt");
@@ -1273,8 +1120,6 @@ ssb_analysis::~ssb_analysis()
    delete SSBConfReader;
    delete ssbflsolver;
    delete puweight;
-   delete puweightup;
-   delete puweightdn;
 }
 
 #endif

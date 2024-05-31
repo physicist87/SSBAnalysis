@@ -397,25 +397,18 @@ void ssb_analysis::Loop( char *logfile )
          BDsicApply();
          BJetDefiner();
          FillHisto(h_Num_PV_BeforePreSel, num_pv, evt_weight_);
-
-         if (METFilterAPP() == true){
-            FillHisto(h_Num_PV_AfterMetFilter, num_pv, evt_weight_);
-         }
-
-         if (Trigger() == true){
-            FillHisto(h_Num_PV_AfterTrigger, num_pv, evt_weight_);
-         }
-
          //////////////////////
          //// Event Filter ////
          //////////////////////
 
          if ( METFilterAPP() == false ) {continue;}
+         FillHisto(h_Num_PV_AfterMetFilter, num_pv, evt_weight_);
          //if ( Filter_PV->at(0) == false ) {continue;}
          ////////////////////////////////
          /// Step 0 Trigger Selection ///
          ////////////////////////////////
          if ( Trigger() == false ) {continue;}
+         FillHisto(h_Num_PV_AfterTrigger, num_pv, evt_weight_);
          if ( NumIsoLeptons() == false ){ continue;}
          FillHisto( h_EventWeight[0] , evt_weight_  );
          FillHisto( h_cf_NLeptons[0], Muon_Count, evt_weight_);
@@ -708,13 +701,13 @@ void ssb_analysis::GetNtupleTotalEvent( unsigned int totevent )// Not Used Funct
    NtupletotalEvent = totevent;
 }
 
-void ssb_analysis::Start( int genLoopon )
+void ssb_analysis::Start()
 {
-   if      ( genLoopon == 0 ){ fout = new TFile(Form("output/%s",outfile),"RECREATE");}
-   else if      ( genLoopon == 1 ){ fout = new TFile(Form("output/%s",outfile),"UPDATE");}
+   fout = new TFile(Form("output/%s",outfile),"RECREATE");
+//   else if      ( genLoopon == 1 ){ fout = new TFile(Form("output/%s",outfile),"UPDATE");}
    //if      ( genLoopon == 0 ){ fout = new TFile(Form("gsidcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/SSB_CPviolation/output/%s",outfile),"RECREATE");}
    //else if ( genLoopon == 1 ){ fout = new TFile(Form("gsidcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/SSB_CPviolation/output/%s",outfile),"UPDATE"  );}
-   else {cout << "genLoopon error" << endl;}
+//   else {cout << "genLoopon error" << endl;}
    fout->cd("");
 
    TDirectory *dir = gDirectory;
@@ -967,190 +960,11 @@ void ssb_analysis::SetInputFileName( char *inname )
 void ssb_analysis::SetOutputFileName(char *outname)
 {   
    outfile = outname;
-   TString rm_rootout = TString(outfile).ReplaceAll(".root","");
-   v_outName.clear();
-   if (isAllSyst == true)
-   {
-      for (int i =0; i < v_SystFullName.size(); ++i)
-      { TString on = Form("%s_%s.root",rm_rootout.Data(),v_SystFullName[i].Data());  
-        v_outName.push_back(on);  
-      }
-   }
 }
-
-void ssb_analysis::GetTotalEvent()
-{
-   totalEvent = 0;
-   cout << " FileName_ ? at Get TotalEvent () "<< FileName_ << endl;
-   if ( TString( CenOfE ).Contains( "8TeV" ) )
-   {
-      if      ( TString(FileName_).Contains( "TTJets_FullLept" ) )     { totalEvent = SSBConfReader->GetNumber("TotalEvent", 1 );}
-      else if ( TString(FileName_).Contains( "DYJetsToLL_M_10To50" ) ) { totalEvent = SSBConfReader->GetNumber("TotalEvent", 2 );}
-      else if ( TString(FileName_).Contains( "DYJetsToLL_M_50" ) )     { totalEvent = SSBConfReader->GetNumber("TotalEvent", 3 );}
-      else if ( TString(FileName_).Contains( "TTJets_HadronicMG" ) )   { totalEvent = SSBConfReader->GetNumber("TotalEvent", 4 );}
-      else if ( TString(FileName_).Contains( "TTJets_SemiLeptMG" ) )   { totalEvent = SSBConfReader->GetNumber("TotalEvent", 5 );}
-      else if ( TString(FileName_).Contains( "T_tW-channel" ) )        { totalEvent = SSBConfReader->GetNumber("TotalEvent", 6 );}
-      else if ( TString(FileName_).Contains( "Tbar_tW-channel" ) )     { totalEvent = SSBConfReader->GetNumber("TotalEvent", 7 );}
-      else if ( TString(FileName_).Contains( "WW" ) )                  { totalEvent = SSBConfReader->GetNumber("TotalEvent", 8 );}
-      else if ( TString(FileName_).Contains( "WZ" ) )                  { totalEvent = SSBConfReader->GetNumber("TotalEvent", 9 );}
-      else if ( TString(FileName_).Contains( "ZZ" ) )                  { totalEvent = SSBConfReader->GetNumber("TotalEvent", 10);}
-      else if ( TString(FileName_).Contains( "WJetsToLNu" ) )          { totalEvent = SSBConfReader->GetNumber("TotalEvent", 11);}
-      else if ( TString(FileName_).Contains( "Data" ) )                { totalEvent = SSBConfReader->GetNumber("TotalEvent", 12);}
-      else { cout << " File Name Error !! at GetTotalEvent()  " << endl; }
-   }
-   else if ( TString( CenOfE ).Contains( "13TeV" ) )
-   {
-      cout << "CENOFE works well !! " << endl;
-      if      ( TString(FileName_).Contains( "TTJets" ) )              { 
-          if      (TString(FileName_).Contains( "FSRUp" ) )      { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 1 ); }
-          else if (TString(FileName_).Contains( "FSRDown" ) )    { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 2 ); }
-          else if (TString(FileName_).Contains( "ISRUp" ) )      { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 3 ); }
-          else if (TString(FileName_).Contains( "ISRDown" ) )    { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 4 ); }
-          else if (TString(FileName_).Contains( "TuneUp" ) )     { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 5 ); }
-          else if (TString(FileName_).Contains( "TuneDown" ) )   { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 6 ); }
-          else if (TString(FileName_).Contains( "Herwig" ) )     { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 7 ); }
-          else if (TString(FileName_).Contains( "EvtGen" ) )     { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 8 ); }
-          else if (TString(FileName_).Contains( "hdampUp" ) )    { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 9 ); }
-          else if (TString(FileName_).Contains( "hdampDown" ) )  { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 10 ); }
-          else if (TString(FileName_).Contains( "GluoneMoveCRTune_erdON" ) ) { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 11 ); }
-          else if (TString(FileName_).Contains( "GluoneMoveCRTune" ) )       { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 12 ); }
-          else if (TString(FileName_).Contains( "QCDCRTune" ) )              { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 13 ); }
-          else if (TString(FileName_).Contains( "erdON" ) )                  { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 14 ); }
-          else if (TString(FileName_).Contains( "TopMass1735" ) )            { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 15 ); }
-          else if (TString(FileName_).Contains( "TopMass1715" ) )            { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 16 ); }
-          else if (TString(FileName_).Contains( "TopMass1755" ) )            { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 17 ); }
-          else if (TString(FileName_).Contains( "TopMass1695" ) )            { totalEvent = SSBConfReader->GetNumber("TTJets_Sys", 18 ); }
-          else { totalEvent = SSBConfReader->GetNumber("TotalEvent", 1 ); }// Defalut is Powheg 
-      }
-      else if ( TString(FileName_).Contains( "WJetsToLNu" ) ){
-         if ( TString(FileName_).Contains( "WJetsToLNu_Mad" ) ) { totalEvent = SSBConfReader->GetNumber("TotalEvent", 14 ); }
-         else { totalEvent = SSBConfReader->GetNumber("TotalEvent", 2 );} // WJetsToLNu
-      }
-      else if ( TString(FileName_).Contains( "DYJetsToLL_M_10To50" ) ) { totalEvent = SSBConfReader->GetNumber("TotalEvent", 3  );}
-      else if ( TString(FileName_).Contains( "DYJetsToLL_M_50" ) )     { totalEvent = SSBConfReader->GetNumber("TotalEvent", 4  );}
-      else if ( TString(FileName_).Contains( "ST_tW_top" ) )           { totalEvent = SSBConfReader->GetNumber("TotalEvent", 5  );}
-      else if ( TString(FileName_).Contains( "ST_tW_antitop" ) )       { totalEvent = SSBConfReader->GetNumber("TotalEvent", 6  );}
-      else if ( TString(FileName_).Contains( "WW" ) )                  { totalEvent = SSBConfReader->GetNumber("TotalEvent", 7  );}
-      else if ( TString(FileName_).Contains( "WZ" ) )                  { totalEvent = SSBConfReader->GetNumber("TotalEvent", 8  );}
-      else if ( TString(FileName_).Contains( "ZZ" ) )                  { totalEvent = SSBConfReader->GetNumber("TotalEvent", 9  );}
-      else if ( TString(FileName_).Contains( "TTbar_WJetToLNu" ) )     { totalEvent = SSBConfReader->GetNumber("TotalEvent", 10 );}// TTW
-      else if ( TString(FileName_).Contains( "TTbar_WQQ" ) )           { totalEvent = SSBConfReader->GetNumber("TotalEvent", 11 );}// TTW
-      else if ( TString(FileName_).Contains( "TTbar_ZToLLNuNu" ) )     { totalEvent = SSBConfReader->GetNumber("TotalEvent", 12 );}// TTZ
-      else if ( TString(FileName_).Contains( "TTbar_ZQQ" ) )           { totalEvent = SSBConfReader->GetNumber("TotalEvent", 13 );}// TTZ
-      else if ( TString(FileName_).Contains( "Z1Jet_LL" ) )            { totalEvent = SSBConfReader->GetNumber("TotalEvent", 15 );}
-      else if ( TString(FileName_).Contains( "Z1Jet_EE" ) )            { totalEvent = SSBConfReader->GetNumber("TotalEvent", 16 );}
-      else if ( TString(FileName_).Contains( "Z1Jet_TauTau" ) )        { totalEvent = SSBConfReader->GetNumber("TotalEvent", 17 );}
-      else if ( TString(FileName_).Contains( "Data" ) )                { totalEvent = SSBConfReader->GetNumber("TotalEvent", 18 );}
-      else { cout << " File Name Error !! at GetTotalEvent()  " << endl; }
-   }
-   else { cout << "CenOfE Error at GetTotalEvent() " << endl; }
-   cout << "totalEvent ? " << totalEvent << endl;
-}
-
-// MC scale factor function
-/*void ssb_analysis::MCSF()
-{
-
-//   double lumi = 19.6*1000;
-//   double lumi = Lumi*1000;
-//   double lumi = 40.24;
-//   double lumi = 2.11*1000;
-   double lumi = Lumi/1000000;
-   double br   = 0.0159;
-  // cout << "Lumi ? " << Lumi/1000000 << endl;
-   cout << "lumi ? " << lumi<< endl;
-   if ( TString(UsingTotEnv).Contains( "False" ) || TString(UsingTotEnv).Contains( "false" ) ) 
-   {
-      
-      if ( TString( CenOfE ).Contains( "8TeV" ) ) // for 8 TeV
-      {
-         if      ( TString(FileName_).Contains( "TTJets_FullLept"     ) ) { mc_sf_ = 25.3*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "DYJetsToLL_M_10To50" ) ) { mc_sf_ = 860.5*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "DYJetsToLL_M_50"     ) ) { mc_sf_ = 3532.8*  lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTJets_HadronicMG"   ) ) { mc_sf_ = 106.9*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTJets_SemiLeptMG"   ) ) { mc_sf_ = 103*     lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "T_tW-channel"        ) ) { mc_sf_ = 11.2*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "Tbar_tW-channel"     ) ) { mc_sf_ = 11.2*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "WW"                  ) ) { mc_sf_ = 5.8*     lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "WZ"                  ) ) { mc_sf_ = 22.4*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "ZZ"                  ) ) { mc_sf_ = 9.0*     lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "WJetsToLNu"          ) ) { mc_sf_ = 37509.0* lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "Data"                ) ) { mc_sf_ = 1;                                }
-         else { cout << " File Name Error !! at MCSF() " << endl; }
-      }
-      else if ( TString( CenOfE ).Contains( "13TeV" ) ) // for 13 TeV
-      {
-         //if      ( TString(FileName_).Contains( "TTJets"              ) ) { mc_sf_ = 831.76* lumi / NtupletotalEvent; }
-         if      ( TString(FileName_).Contains( "TTbar_Signal"        ) ) { mc_sf_ = 88.51*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_SemiLep"       ) ) { mc_sf_ = 366.3*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_AllHadron"     ) ) { mc_sf_ = 378.9*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "WJetsToLNu"          ) ) { mc_sf_ = 61526*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "DYJetsToLL_M_10To50" ) ) { mc_sf_ = 20460.0*  lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "DYJetsToLL_M_50"     ) ) { mc_sf_ = 6077.22*  lumi / NtupletotalEvent; }
-         //else if ( TString(FileName_).Contains( "DYJetsToLL_M_50"     ) ) { mc_sf_ = 6025.2*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "ST_tW_top"           ) ) { mc_sf_ = 35.6*     lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "ST_tW_antitop"       ) ) { mc_sf_ = 35.6*     lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "WW"                  ) ) { mc_sf_ = 118.7*    lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "WZ"                  ) ) { mc_sf_ = 27.57*     lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "ZZ"                  ) ) { mc_sf_ = 12.14*     lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_WJetToLNu"     ) ) { mc_sf_ = 0.2161*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_WQQ"           ) ) { mc_sf_ = 0.4377*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_ZToLLNuNu"     ) ) { mc_sf_ = 0.2439*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_ZQQ"           ) ) { mc_sf_ = 0.5104*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "Z1Jet"               ) ) { mc_sf_ = 1921.8*   lumi / NtupletotalEvent; }
-         else if ( TString(FileName_).Contains( "Data"                ) ) { mc_sf_ = 1;                                 }
-         else { cout << " File Name Error !! at MCSF()" << endl;}
-      }
-      else { cout << "Center Of Energy Error in MCSF()" << endl;  }
-   }
-   else if ( TString(UsingTotEnv).Contains( "True" ) || TString(UsingTotEnv).Contains( "true" ) )
-   {
-      if ( TString( CenOfE ).Contains( "8TeV" )  )
-      {
-         if      ( TString(FileName_).Contains( "TTJets_FullLept"     ) ) { mc_sf_ = 25.3*    lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "DYJetsToLL_M_10To50" ) ) { mc_sf_ = 860.5*   lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "DYJetsToLL_M_50"     ) ) { mc_sf_ = 3532.8*  lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "TTJets_HadronicMG"   ) ) { mc_sf_ = 106.9*   lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "TTJets_SemiLeptMG"   ) ) { mc_sf_ = 103*     lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "T_tW-channel"        ) ) { mc_sf_ = 11.2*    lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "Tbar_tW-channel"     ) ) { mc_sf_ = 11.2*    lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "WW"                  ) ) { mc_sf_ = 5.8*     lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "WZ"                  ) ) { mc_sf_ = 22.4*    lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "ZZ"                  ) ) { mc_sf_ = 9.0*     lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "WJetsToLNu"          ) ) { mc_sf_ = 37509.0* lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "Data"                ) ) { mc_sf_ = 1;                          }
-         else { cout << " File Name Error !! " << endl; }
-      }
-      else if ( TString(CenOfE).Contains("13TeV") )
-      {
-         if      ( TString(FileName_).Contains( "TTJets"              ) ) { mc_sf_ = 831.76*   lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "WJetsToLNu"          ) ) { mc_sf_ = 61526*    lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "DYJetsToLL_M_10To50" ) ) { mc_sf_ = 18810*    lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "DYJetsToLL_M_50"     ) ) { mc_sf_ = 5941.0*   lumi / totalEvent; }
-         //else if ( TString(FileName_).Contains( "DYJetsToLL_M_50"     ) ) { mc_sf_ = 6025.2*   lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "ST_tW_top"           ) ) { mc_sf_ = 35.6*     lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "ST_tW_antitop"       ) ) { mc_sf_ = 35.6*     lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "WW"                  ) ) { mc_sf_ = 118.7*    lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "WZ"                  ) ) { mc_sf_ = 65.9*     lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "ZZ"                  ) ) { mc_sf_ = 31.8*     lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_WJetToLNu"     ) ) { mc_sf_ = 0.2043*   lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_WQQ"           ) ) { mc_sf_ = 0.4062*   lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_ZToLLNuNu"     ) ) { mc_sf_ = 0.2529*   lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "TTbar_ZQQ"           ) ) { mc_sf_ = 0.5297*   lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "Z1Jet"               ) ) { mc_sf_ = 1921.8*   lumi / totalEvent; }
-         else if ( TString(FileName_).Contains( "Data"                ) ) { mc_sf_ = 1;                                 }
-         else { cout << " File Name Error !! at MCSF()" << endl;}
-
-      }
-      else { cout << "Center Of Energy Error in MCSF()" << endl; }
-   } 
-   else {cout << "MCSF error " << endl; }
-   cout << "mc_sf_ : " << mc_sf_ << endl;
-}*/
 
 void ssb_analysis::MCSF()
 {
-   if (FileName_.Contains("Data")){ mc_sf_ = 1.; return; }
+   if (FileName_.Contains("Data")||FileName_.Contains("Single")||FileName_.Contains("EG")){ mc_sf_ = 1.; return; }
    /// Open Xsec Tables ///
    FILE *xsecs_;
    char sampleName[1000];
@@ -1195,6 +1009,7 @@ void ssb_analysis::MCSF()
    //cout << "Lumi : " << Lumi << endl;
    double lumi = Lumi/1000000;
    mc_sf_ = (m_sam_xsec[FileName_.Data()]*m_sam_br[FileName_.Data()]*lumi)/m_sam_posi_nega[FileName_.Data()];
+   return;
 }
 
 // Apply MC SF To Event //
@@ -1204,20 +1019,6 @@ void ssb_analysis::MCSFApply()
    evt_weight_beforemcsf_ = evt_weight_; // keep event weight // 
    if ( !TString(FileName_).Contains( "Data") ){ evt_weight_ = evt_weight_*mc_sf_; } // apply MC scale factor // 
    else {evt_weight_ = 1;}
-   if ( isAllSyst == true )
-   {
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      { 
-         if ( !TString(FileName_).Contains( "Data") )
-         {
-            v_SystEvt[i]=evt_weight_beforemcsf_*mc_sf_;
-         }
-         else {
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
-      } // apply MC scale factor //
-   }
 }
 void ssb_analysis::GenWeightApply()
 {
@@ -1230,20 +1031,6 @@ void ssb_analysis::GenWeightApply()
       evt_weight_ = evt_weight_*genweight;
    }
    else {evt_weight_ = 1;}
-   if ( isAllSyst == true )
-   {
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      { 
-         if ( !TString(FileName_).Contains( "Data") )
-         {
-            v_SystEvt[i]=evt_weight_beforegenweight_*genweight;
-         }
-         else {
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
-      } // apply MC scale factor //
-   }
 }
 void ssb_analysis::PDFWeightApply()
 {
@@ -1265,38 +1052,7 @@ void ssb_analysis::PDFWeightApply()
       evt_weight_ = evt_weight_*pdfweight;
    }
    else { evt_weight_ = 1; }
-   if ( isAllSyst == true )
-   {
-      double pdfweight_allsys = 1.0;
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      { 
-         pdfweight_allsys = 1.0;
-         if ( !TString(FileName_).Contains( "Data") )
-         {
-            if (TString(FileName_).Contains("TTJets_")){
-               /// PDF Index ///
-               if (v_SystFullName.at(i).Contains("PDF_")){
-                  TString SysPDF_ = v_SystFullName[i];
-                  SysPDF_ = SysPDF_.ReplaceAll("PDF_","");
-                  /*cout 
-                  << "SysPDF_ : " << SysPDF_ << " SysPDF_ Int_t : " << SysPDF_.Atoi() 
-                  << " LHE_Id : "<< LHE_Id->at(SysPDF_.Atoi() + 8)
-                  << " EvtWeight : "<< LHE_Weight->at(SysPDF_.Atoi() + 8)/LHE_Central
-                  << endl;*/
-                  pdfweight_allsys = LHE_Weight->at(SysPDF_.Atoi() + 8)/LHE_Central;
-               }
-               else {pdfweight_allsys = 1;}
-            } 
-
-            v_SystEvt[i]=v_SystEvt[i]*pdfweight_allsys;
-         }
-         else {
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
-      } // apply MC scale factor //
-   }
-
+   return;
 }
 void ssb_analysis::FactRenoApply()
 {
@@ -1318,33 +1074,7 @@ void ssb_analysis::FactRenoApply()
    }
    else { factrenosys =1; }
    evt_weight_ = evt_weight_*(factrenosys);
-   if ( isAllSyst == true )
-   {
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      { 
-         if ( !TString(FileName_).Contains( "Data") )
-         {
-            if ( !TString(FileName_).Contains( "TTJets") ){
-               v_SystEvt[i]=v_SystEvt[i];
-            }
-            else {
-               if (v_SystFullName[i].Contains("FactReno_1")){ v_SystEvt[i]=v_SystEvt[i]*LHE_Weight->at(1)/LHE_Central;}
-               else if (v_SystFullName[i].Contains("FactReno_2")){v_SystEvt[i]=v_SystEvt[i]*LHE_Weight->at(2)/LHE_Central;}
-               else if (v_SystFullName[i].Contains("FactReno_3")){v_SystEvt[i]=v_SystEvt[i]*LHE_Weight->at(3)/LHE_Central;}
-               else if (v_SystFullName[i].Contains("FactReno_4")){v_SystEvt[i]=v_SystEvt[i]*LHE_Weight->at(4)/LHE_Central;}
-               else if (v_SystFullName[i].Contains("FactReno_5")){v_SystEvt[i]=v_SystEvt[i]*LHE_Weight->at(5)/LHE_Central;}
-               else if (v_SystFullName[i].Contains("FactReno_6")){v_SystEvt[i]=v_SystEvt[i]*LHE_Weight->at(6)/LHE_Central;}
-               else if (v_SystFullName[i].Contains("FactReno_7")){v_SystEvt[i]=v_SystEvt[i]*LHE_Weight->at(7)/LHE_Central;}
-               else if (v_SystFullName[i].Contains("FactReno_8")){v_SystEvt[i]=v_SystEvt[i]*LHE_Weight->at(8)/LHE_Central;}
-               else {v_SystEvt[i]=v_SystEvt[i];}
-            }
-         }
-         else { // Case of Data
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
-      } // apply MC scale factor //
-   }
+   return;
 }
 void ssb_analysis::FragmentApply()
 {
@@ -1361,29 +1091,7 @@ void ssb_analysis::FragmentApply()
    }
    else { fragmentsys =1; }
    evt_weight_ = evt_weight_*(fragmentsys);
-   if ( isAllSyst == true )
-   {
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      { 
-         if ( !TString(FileName_).Contains( "Data") )
-         {
-            if ( !TString(FileName_).Contains( "TTJets") ){
-               v_SystEvt[i]=v_SystEvt[i];
-            }
-            else {
-               if (v_SystFullName[i].Contains("FragmentCentral"))      { v_SystEvt[i]=v_SystEvt[i]*Frag_Cen_Weight;}
-               else if (v_SystFullName[i].Contains("FragmentUp"))      { v_SystEvt[i]=v_SystEvt[i]*Frag_Up_Weight;}
-               else if (v_SystFullName[i].Contains("FragmentDown"))    { v_SystEvt[i]=v_SystEvt[i]*Frag_Down_Weight;}
-               else if (v_SystFullName[i].Contains("FragmentPeterson")){ v_SystEvt[i]=v_SystEvt[i]*Frag_Peterson_Weight;}
-               else {v_SystEvt[i]=v_SystEvt[i];}
-            }
-         }
-         else { // Case of Data
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
-      } // apply MC scale factor //
-   }
+   return;
 }
 /// Systematic for Decay tables
 void ssb_analysis::DecayTableApply()
@@ -1399,27 +1107,7 @@ void ssb_analysis::DecayTableApply()
    }
    else { dectabsys =1; }
    evt_weight_ = evt_weight_*(dectabsys);
-   if ( isAllSyst == true )
-   {
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      { 
-         if ( !TString(FileName_).Contains( "Data") )
-         {
-            if ( !TString(FileName_).Contains( "TTJets") ){
-               v_SystEvt[i]=v_SystEvt[i];
-            }
-            else {
-               if (v_SystFullName[i].Contains("DecayTableUp"))      { v_SystEvt[i]=v_SystEvt[i]*Semilep_BrUp_Weight;}
-               else if (v_SystFullName[i].Contains("DecayTableDown"))    { v_SystEvt[i]=v_SystEvt[i]*Semilep_BrDown_Weight;}
-               else {v_SystEvt[i]=v_SystEvt[i];}
-            }
-         }
-         else { // Case of Data
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
-      } // apply MC scale factor //
-   }   
+   return;   
 }
 
 // Apply Trigger SF To Event //
@@ -1442,49 +1130,7 @@ void ssb_analysis::TriggerSFApply()
       evt_weight_ = evt_weight_*triggersf_;
    }// apply Trigger scale factor //
    else { evt_weight_ = evt_weight_; }
-   if ( isAllSyst == true )
-   {
-      double trigsfcen_ = 1;
-      double trigsfup_ = 1;
-      double trigsfdn_ = 1;
-      if ( TString(Decaymode).Contains( "dimu" ) )  
-      { 
-         trigsfcen_ = SSBEffcal->TrigDiMuon_Eff(Lep1,Lep2,"central"); 
-         trigsfup_  = SSBEffcal->TrigDiMuon_Eff(Lep1,Lep2,"up"); 
-         trigsfdn_  = SSBEffcal->TrigDiMuon_Eff(Lep1,Lep2,"down"); 
-      }
-      else if ( TString(Decaymode).Contains( "dielec" ) ) 
-      {
-         trigsfcen_ = SSBEffcal->TrigDiElec_Eff(Lep1,Lep2,"central");
-         trigsfup_  = SSBEffcal->TrigDiElec_Eff(Lep1,Lep2,"up"); 
-         trigsfdn_  = SSBEffcal->TrigDiElec_Eff(Lep1,Lep2,"down"); 
-      }
-      else if ( TString(Decaymode).Contains( "muel" ) ) 
-      {
-         trigsfcen_ = SSBEffcal->TrigMuElec_Eff(Lep1,Lep2,"central");
-         trigsfup_  = SSBEffcal->TrigMuElec_Eff(Lep1,Lep2,"up"); 
-         trigsfdn_  = SSBEffcal->TrigMuElec_Eff(Lep1,Lep2,"down"); 
-      }
-      else  {cout << "CHECK OUT TRIGGER EFF ALL SYS"<< endl; }
-
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      { 
-         if ( !TString(FileName_).Contains( "Data") )
-         {
-            /// Get TRIGGER SF w SYS //
-            if ( v_SystFullName[i].Contains("TrigSF") ){
-               if (v_SystFullName[i].Contains("TrigSFUp") ) {v_SystEvt[i] = v_SystEvt[i]*trigsfup_;}
-               else if (v_SystFullName[i].Contains("TrigSFDown") ) {v_SystEvt[i] = v_SystEvt[i]*trigsfdn_;}
-               else {cout << "CHECK OUT TRIGGER SF SYSTEMATIC !!! " << v_SystFullName[i]<< endl;}
-            } 
-            else { v_SystEvt[i] = v_SystEvt[i]*trigsfcen_; }
-         }
-         else {
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
-      } // apply MC scale factor //
-   } 
+   return;
 }
 void ssb_analysis::PileUpReWeightApply()
 {
@@ -1492,44 +1138,17 @@ void ssb_analysis::PileUpReWeightApply()
    evt_weight_beforePileup_ = evt_weight_; // keep event weight // 
    double puweight_ = 1.;
    double pu_weight_central = puweight->weight( PileUp_Count_Intime );
-   double pu_weight_up = puweightup->weight( PileUp_Count_Intime );
-   double pu_weight_dn = puweightdn->weight( PileUp_Count_Intime );
    cout << "pu_weight_central : " << pu_weight_central << endl;
    if ( !TString(FileName_).Contains( "Data") )
    {
-//      puweight_ = puweight->weight( PileUp_Count_Intime );
-      if (TString(PileUpSys).Contains("central") ) { puweight_   = pu_weight_central;}
-      else if (TString(PileUpSys).Contains("up") ) { puweight_   = pu_weight_up; }
-      else if (TString(PileUpSys).Contains("down") ) { puweight_ = pu_weight_dn; }
-      else {  
+      puweight_ = puweight->weight( PileUp_Count_Intime );
+//      if (TString(PileUpSys).Contains("central") ) { puweight_   = pu_weight_central;}
+//      else {  
       cout << "PileUp sys Error ... Defalut is Weight_PileUp ... : " << PileUpSys << endl;
    }
-   evt_weight_ = evt_weight_*puweight_; } // apply PileUpReweight //
    else {evt_weight_ = 1;}
-/*   if ( isAllSyst == true )
-   {
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      {
-         if( !TString(FileName_).Contains("Data") )
-         {
-            if ( v_SystFullName[i].Contains("PileUpUp"))
-            {
-               v_SystEvt[i] = v_SystEvt[i]*pu_weight_up;
-            }
-            else if ( v_SystFullName[i].Contains("PileUpDown"))
-            {
-               v_SystEvt[i] = v_SystEvt[i]*pu_weight_dn;
-            }
-            else {
-               v_SystEvt[i]=v_SystEvt[i]*pu_weight_central;
-            }
-         }
-         else { // Not for Data // 
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
-      }
-   }*/
+   evt_weight_ = evt_weight_*puweight_; // apply PileUpReweight //
+   return;
 }
 void ssb_analysis::L1PreFireApply()
 {
@@ -1551,91 +1170,8 @@ void ssb_analysis::L1PreFireApply()
    }
    evt_weight_ = evt_weight_*l1prefire_; } // apply PileUpReweight //
    else {evt_weight_ = 1;}
-   if ( isAllSyst == true )
-   {
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      {
-         if( !TString(FileName_).Contains("Data") )
-         {
-            if ( v_SystFullName[i].Contains("L1PreFireUp"))
-            {
-               v_SystEvt[i] = v_SystEvt[i]*l1prefire_up;
-            }
-            else if ( v_SystFullName[i].Contains("L1PreFireDown"))
-            {
-               v_SystEvt[i] = v_SystEvt[i]*l1prefire_dn;
-            }
-            else {
-               v_SystEvt[i]=v_SystEvt[i]*l1prefire_central;
-            }
-         }
-         else { // Not for Data // 
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
-      }
-   }
 }
-void ssb_analysis::Weight()
-{
-   double puweight_ = 1;
-   double k_fac_;
-   double genweight = 1;
-   double pdfweight = 1;
 
-/*   /////////////////////////
-   /// To Get PDF Weight ///
-   /////////////////////////
-   if ( !TString(FileName_).Contains("Data") )
-   {
-      if (PDFSys == -1 ){ pdfweight =1; }
-      else if ( PDFSys == 0 ) { pdfweight = PDFWeight_Cent->at(1); }
-      else if ( PDFSys > 0 )  
-      {
-         if      ( PDFSys%2 == 1 ) { pdfweight = PDFWeight_Var1_Up->at(PDFSys/2); } //odd number is PDFUp
-         else if ( PDFSys%2 == 0 ) { pdfweight = PDFWeight_Var1_Down->at(PDFSys/2 -1); } //even number is PDFDown
-         else {cout << "Somethig Wrong in ther PDF sys ... " << endl;}
-      }
-   }*/
-   evt_weight_ = 1;
-   
-   ///////////////////////
-   // PileUp Systematic //
-   ///////////////////////
-   puweight_ = puweight->weight( PileUp_Count_Intime );
-   if (TString(PileUpSys).Contains("central") ) { puweight_   = puweight->weight( PileUp_Count_Intime ); }
-   else if (TString(PileUpSys).Contains("up") ) { puweight_   = puweightup->weight( PileUp_Count_Intime ); }
-   else if (TString(PileUpSys).Contains("down") ) { puweight_ = puweightdn->weight( PileUp_Count_Intime ); }
-   else {  
-   cout << "PileUp sys Error ... Defalut is Weight_PileUp ... : " << PileUpSys << endl;
-   }
-   if ( TString(FileName_).Contains( "TTJets"   ) )
-   {  
-      k_fac_ = 1;
-      evt_weight_ = k_fac_*mc_sf_*puweight_*lep_eff*pdfweight;
-   }
-//   { k_fac_ = 252.89/235.2; evt_weight_ = k_fac_*mc_sf_; }
-   else if ( TString(FileName_).Contains( "DYJetsToLL" ) || 
-             TString(FileName_).Contains( "WW"         ) ||
-             TString(FileName_).Contains( "WZ"         ) ||
-             TString(FileName_).Contains( "ZZ"         ) ||
-             TString(FileName_).Contains( "WJetsToLNu" ) ||
-             TString(FileName_).Contains( "tW" )   )
-   {
-      k_fac_ =1; 
-      if ( TString(FileName_).Contains( "DYJetsToLL" ) || TString(FileName_).Contains( "WJetsToLNu" ) ) 
-      {
-         if (Gen_EventWeight > 0){genweight =1;}
-         else {genweight =-1;}
-      }
-      evt_weight_ = k_fac_*mc_sf_*puweight_*lep_eff*genweight*pdfweight; 
-   }
-   else if ( TString(FileName_).Contains( "Data" ) )
-   {
-      k_fac_ =1; evt_weight_ = 1; puweight_=1; 
-   }
-   else {cout << "Event-Weight error !!" << endl; evt_weight_ =0; }
-}
 void ssb_analysis::NumPVCount()
 {
    num_pv = 0;
@@ -1724,29 +1260,31 @@ bool ssb_analysis::SelTrigger(vector<string> v_sel)
 {
    TString trgName = "";
    int ptrigindex;
-   bool trigpass;
-
-   bool passtrig_;
+   bool passtrig_ = false;
    ptrigindex =0;
 
    for (int i =0; i < Trigger_Name->size(); i++)
    {
-//      cout << "Ntuple Triggers : " <<  Trigger_Name->at(i) << endl; 
+      //cout << "Ntuple Triggers : " <<  Trigger_Name->at(i) << endl; 
       for (int j = 0; j < v_sel.size(); j++)
       {
          trgName = v_sel[j];
    
          if ( TString( Trigger_Name->at(i) ).Contains( v_sel.at(j) ) )//TString clone 
          {
-//            cout << "v_sel.at(j) ?" << v_sel.at(j) << endl;
+            //cout << "v_sel.at(j) ?" << v_sel.at(j) << endl;
             if ( ( Trigger_isPass->at(i)  ) && 
                 !( Trigger_isError->at(i) ) && 
                  ( Trigger_isRun->at(i) )      ) 
-            { ptrigindex = ptrigindex+1; }
+            { 
+               ptrigindex = ptrigindex+1; 
+               //cout << "Trigger_isPass->at(i)   : " << Trigger_isPass->at(i)   << endl;
+            }
          }
       }
    }
-   if ( ptrigindex > 0 ) { trigpass = true; }
+   //cout << "ptrigindex : "  << ptrigindex << endl;
+   if ( ptrigindex > 0 ) { passtrig_ = true; }
    return passtrig_; 
 
 }
@@ -1822,8 +1360,12 @@ bool ssb_analysis::Trigger()
          if ( TString(FileName_).Contains( "Single") ) {
             seltrigName = SLtrigName;
             vetotrigName = DLtrigName;
+            cout << "selected!! " << endl;
             ispassselTrig_ = SelTrigger(seltrigName);
+            cout << "ispassselTrig_ : " << ispassselTrig_ << endl;
+            cout << "veto !! " << endl;
             ispassvetoTrig_ = SelTrigger(vetotrigName);
+            cout << "ispassvetoTrig_ : " << ispassvetoTrig_ << endl;
          }
          else if( TString(FileName_).Contains( "Double") || TString(FileName_).Contains( "MuonEG")) {
             seltrigName = DLtrigName;
@@ -1835,9 +1377,9 @@ bool ssb_analysis::Trigger()
 
       }
 
-      
       if (ispassvetoTrig_ == true) {trigpass = false;}
-   } 
+   }
+   cout << "trigger : " << trigpass << endl; 
    return trigpass;
 }
 // Function of Muon Rocheser Correction //
@@ -2376,113 +1918,6 @@ void ssb_analysis::LeptonSFApply()
       evt_weight_ = evt_weight_*lep_eff;
    }
    else {evt_weight_ = 1;}
-
-   /// For All-in-One Systematic ///
-   if ( isAllSyst == true )
-   {
-      /// Get Central Lepton SF for each channel
-      if ( !TString(FileName_).Contains( "Data") )
-      {
-         if ( TString(Decaymode).Contains( "dimuon" ) )
-         {
-            lep_sf_cent = SSBEffcal->DoubleMuon_EffROOT(Lep1,Lep2,"central","central","central"); // lep1 lep2 idsys isosys tracksys 
-         }
-         else if ( TString(Decaymode).Contains( "dielec" ) )
-         {
-            lep_sf_cent = SSBEffcal->DoubleElec_EffROOT(Lep1,Lep2,Elec_Supercluster_Eta->at(v_lepton_idx[0]) ,Elec_Supercluster_Eta->at(v_lepton_idx[1]) ,"central","central");// LepRecoSFSys is for Lepton //
-         }
-         else if ( TString(Decaymode).Contains( "muel" ) )
-         {
-            lep_sf_cent = SSBEffcal->MuonElec_EffROOT(TMuon,TElectron,Elec_Supercluster_Eta->at(v_electron_idx[0]) ,"central","central","central","central");//LepID, LepIso, Tracksys, ReconSys
-         }
-         else {lep_sf_cent = 0.0;cout << "Error In LeptonSFApply" << endl;}
-      }
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      {
-         if ( !TString(FileName_).Contains( "Data") ){
-            if ( v_SystFullName[i].Contains("LepIDUp"))
-            {
-               if ( TString(Decaymode).Contains( "dimuon" ) ) 
-               {
-                  //v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleMuon_EffROOT(Lep1,Lep2,"up","central"); // lep1 lep2 idsys isosys 
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleMuon_EffROOT(Lep1,Lep2,"up","central","central"); // lep1 lep2 idsys isosys tracksys 
-               }
-               else if ( TString(Decaymode).Contains( "dielec" ) )
-               {
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleElec_EffROOT(Lep1,Lep2,Elec_Supercluster_Eta->at(v_lepton_idx[0]) ,Elec_Supercluster_Eta->at(v_lepton_idx[1]) ,"up","central");// LepRecoSFSys is for Lepton //
-               }
-               else if ( TString(Decaymode).Contains( "muel" ) )
-               {
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->MuonElec_EffROOT(TMuon,TElectron,Elec_Supercluster_Eta->at(v_electron_idx[0]) ,"up","central","central","central");//LepID, LepIso, Tracksys, ReconSys
-               }
-               else {cout << "LeptonSFApply error for All-in-One Syst.!!!!" << endl;}
-            }
-            else if ( v_SystFullName[i].Contains("LepIDDown"))
-            {
-               if ( TString(Decaymode).Contains( "dimuon" ) ) 
-               {
-                  //v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleMuon_EffROOT(Lep1,Lep2,"down","central"); // lep1 lep2 idsys isosys 
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleMuon_EffROOT(Lep1,Lep2,"down","central","central"); // lep1 lep2 idsys isosys tracksys 
-               }
-               else if ( TString(Decaymode).Contains( "dielec" ) )
-               {
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleElec_EffROOT(Lep1,Lep2,Elec_Supercluster_Eta->at(v_lepton_idx[0]) ,Elec_Supercluster_Eta->at(v_lepton_idx[1]) ,"down","central");// LepRecoSFSys is for Lepton //
-               }
-               else if ( TString(Decaymode).Contains( "muel" ) )
-               {
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->MuonElec_EffROOT(TMuon,TElectron,Elec_Supercluster_Eta->at(v_electron_idx[0]) ,"down","central","central","central");//LepID, LepIso, Tracksys, ReconSys
-               }
-               else {cout << "LeptonSFApply error for All-in-One Syst.!!!!" << endl;}
-
-            }
-            else if ( v_SystFullName[i].Contains("LepIsoUp"))
-            {
-               if ( TString(Decaymode).Contains( "dimuon" ) ) 
-               {
-                  //v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleMuon_EffROOT(Lep1,Lep2,"central","up"); // lep1 lep2 idsys isosys 
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleMuon_EffROOT(Lep1,Lep2,"central","up","central"); // lep1 lep2 idsys isosys tracksys
-               }
-               else if ( TString(Decaymode).Contains( "dielec" ) )
-               {
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleElec_EffROOT(Lep1,Lep2,Elec_Supercluster_Eta->at(v_lepton_idx[0]) ,Elec_Supercluster_Eta->at(v_lepton_idx[1]) ,"central","central");// LepRecoSFSys is for Lepton //
-               }
-               else if ( TString(Decaymode).Contains( "muel" ) )
-               {
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->MuonElec_EffROOT(TMuon,TElectron,Elec_Supercluster_Eta->at(v_electron_idx[0]) ,"central","up","central","central");//LepID, LepIso, Tracksys, ReconSys
-               }
-               else {cout << "LeptonSFApply error for All-in-One Syst.!!!!" << endl;}
-            }
-            else if ( v_SystFullName[i].Contains("LepIsoDown"))
-            {
-               if ( TString(Decaymode).Contains( "dimuon" ) ) 
-               {
-                  //v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleMuon_EffROOT(Lep1,Lep2,"central","down"); // lep1 lep2 idsys isosys 
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleMuon_EffROOT(Lep1,Lep2,"central","down","central"); // lep1 lep2 idsys isosys tracksys
-               }
-               else if ( TString(Decaymode).Contains( "dielec" ) )
-               {
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->DoubleElec_EffROOT(Lep1,Lep2,Elec_Supercluster_Eta->at(v_lepton_idx[0]) ,Elec_Supercluster_Eta->at(v_lepton_idx[1]) ,"central","central");// LepRecoSFSys is for Lepton //
-               }
-               else if ( TString(Decaymode).Contains( "muel" ) )
-               {
-                  v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->MuonElec_EffROOT(TMuon,TElectron,Elec_Supercluster_Eta->at(v_electron_idx[0]) ,"central","down","central","central");//LepID, LepIso, Tracksys, ReconSys
-               }
-               else {cout << "LeptonSFApply error for All-in-One Syst.!!!!" << endl;}
-
-            }
-
-            else {
-               /// At here, you will use leptons sf as central value ///
-               v_SystEvt[i] = v_SystEvt[i]*lep_sf_cent;
-            }
-         }
-         else { // Data 
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i]; 
-//         cout << "v_SystFullName[" << i << "] : " << v_SystFullName[i] << " : " << v_SystEvt[i] << endl;
-      }
-   }
 }
 // Jet Selection and Jet cleaning 
 void ssb_analysis::JetSelector()
@@ -2498,28 +1933,6 @@ void ssb_analysis::JetSelector()
    v_jetdn_TL.clear();
    v_jetresup_TL.clear();
    v_jetresdn_TL.clear();
-
-
-   /// For JER 
-   v_jetdpt_res.clear();    // dpt of JER for All-in-One syst.
-   v_jetdpt_jesup.clear();  // dpt of JERUp for All-in-One syst.
-   v_jetdpt_jesdn.clear();  // dpt of JERDn for All-in-One syst.
-   v_jetdpt_resup.clear();  // dpt of JERUp for All-in-One syst.
-   v_jetdpt_resdn.clear();  // dpt of JERDn for All-in-One syst.
-
-   // Delta px JER Variation // 
-   v_jetdpx_res.clear();    // dpx of JER for All-in-One syst.
-   v_jetdpx_jesup.clear();  // dpx of JERUp for All-in-One syst.
-   v_jetdpx_jesdn.clear();  // dpx of JERDn for All-in-One syst.
-   v_jetdpx_resup.clear();  // dpx of JERUp for All-in-One syst.
-   v_jetdpx_resdn.clear();  // dpx of JERDn for All-in-One syst.
-
-   // Delta py JER Variation // 
-   v_jetdpy_res.clear();    // dpy of JER for All-in-One syst.
-   v_jetdpy_jesup.clear();  // dpy of JERUp for All-in-One syst.
-   v_jetdpy_jesdn.clear();  // dpy of JERDn for All-in-One syst.
-   v_jetdpy_resup.clear();  // dpy of JERUp for All-in-One syst.
-   v_jetdpy_resdn.clear();  // dpy of JERDn for All-in-One syst.
 
 
    Int_t injet = Jet->GetEntriesFast();
@@ -2788,99 +2201,15 @@ void ssb_analysis::JetDefiner()
       Jet1 = v_jet_TL[0];
       if (v_jet_TL.size() > 1){ Jet2 = v_jet_TL[1]; }
    }
-   if(isAllSyst == true){ 
-      Jet1Up = new TLorentzVector();
-      Jet2Up = new TLorentzVector();
-      Jet1Dn = new TLorentzVector();
-      Jet2Dn = new TLorentzVector();
-      Jet1JERUp = new TLorentzVector();
-      Jet2JERUp = new TLorentzVector();
-      Jet1JERDn = new TLorentzVector();
-      Jet2JERDn = new TLorentzVector();
-
-      if (v_jetup_TL.size() >= 1) {
-         Jet1Up = v_jetup_TL[0];
-         if (v_jetup_TL.size() > 1) { Jet2Up = v_jetup_TL[1]; }
-      }
-      if ( v_jetdn_TL.size() >= 1 ) { 
-         Jet1Dn = v_jetdn_TL[0]; 
-         if ( v_jetdn_TL.size() > 1 ) Jet2Dn = v_jetdn_TL[1]; 
-      }
-      if (v_jetresup_TL.size() >= 1) {
-         Jet1JERUp = v_jetresup_TL[0];
-         if (v_jetresup_TL.size() > 1) { Jet2JERUp = v_jetresup_TL[1]; }
-      }
-      if ( v_jetresdn_TL.size() >= 1 ) { 
-         Jet1JERDn = v_jetresdn_TL[0]; 
-         if ( v_jetresdn_TL.size() > 1 ) Jet2JERDn = v_jetresdn_TL[1]; 
-      }
-   }
    return;
 }
 void ssb_analysis::METDefiner()
 {
  
    Met = new TLorentzVector();
-   MetJESUp = new TLorentzVector();
-   MetJESDn = new TLorentzVector();
-   MetJERUp = new TLorentzVector();
-   MetJERDn = new TLorentzVector();
    /// For Data, We don't need to apply JES systematic ///  
    Met = (TLorentzVector*)MET->At(0);  
-   /*
-   if (TString(FileName_).Contains( "Data" ))
-   {
-      Met =  (TLorentzVector*)METMUEGCleanCor->At(0); 
-      MetJESDn = Met; MetJESUp = Met;
-      MetJERDn = Met; MetJERUp = Met;
-   }
-   else {
-      Met =  (TLorentzVector*)METMUCleanCor->At(0);
-      if ( TString(JetEnSys).Contains("JetEnNorm"     ) )
-      {
-         Met = Met;
-      }
-      else if ( TString(JetEnSys).Contains("JetEnShiftedUp") )
-      {
-         Met->SetPtEtaPhiE(METMUCleanCor_JetEnShiftedUp_PT->at(0) ,0, METMUCleanCor_JetEnShiftedUp_Phi->at(0),0);
-      }
-      else if ( TString(JetEnSys).Contains("JetEnShiftedDown") )
-      {
-         Met->SetPtEtaPhiE(METMUCleanCor_JetEnShiftedDown_PT->at(0) ,0, METMUCleanCor_JetEnShiftedDown_Phi->at(0),0);
-      }
-      else if ( TString(MetSys).Contains("None") ){
-         Met = Met;
-      }
-      else if ( TString(MetSys).Contains("Up") )
-      { cout << "Case Up" << endl;
-         Met->SetPtEtaPhiE(METMUCleanCor_UnclusteredEnShiftedUp_PT->at(0) ,0, METMUCleanCor_UnclusteredEnShiftedUp_Phi->at(0),0);
-      }
-      else if ( TString(MetSys).Contains("Down") )
-      {  cout << "Case Down" << endl;
-         Met->SetPtEtaPhiE(METMUCleanCor_UnclusteredEnShiftedDown_PT->at(0) ,0, METMUCleanCor_UnclusteredEnShiftedDown_Phi->at(0),0);
-      }
-      else 
-      {
-         Met = Met;
-         cout << "Check out Jet Systematic Config ... Default is Norminal MET ..."<< endl;      
-      }
-      Met = METSmear( v_jetdpt_res, v_jetdpx_res, v_jetdpy_res, Met );
-      // apply MET Smear //
-      if (isAllSyst == true)
-      {
-         MetJESUp->SetPtEtaPhiE(METMUCleanCor_JetEnShiftedUp_PT->at(0) ,0, METMUCleanCor_JetEnShiftedUp_Phi->at(0),0);
-         MetJESDn->SetPtEtaPhiE(METMUCleanCor_JetEnShiftedDown_PT->at(0) ,0, METMUCleanCor_JetEnShiftedDown_Phi->at(0),0);
-         
-         MetJERUp = (TLorentzVector*)METMUCleanCor->At(0);
-         MetJERDn = (TLorentzVector*)METMUCleanCor->At(0);
-         
-         MetJESUp = METSmear( v_jetdpt_jesup, v_jetdpx_jesup, v_jetdpy_jesup, MetJESUp );
-         MetJESDn = METSmear( v_jetdpt_jesdn, v_jetdpx_jesdn, v_jetdpy_jesdn, MetJESDn );
-         /// Jer MET Smear ///
-         MetJERUp = METSmear( v_jetdpt_resup, v_jetdpx_resup, v_jetdpy_resup, MetJERUp );
-         MetJERDn = METSmear( v_jetdpt_resdn, v_jetdpx_resdn, v_jetdpy_resdn, MetJERDn );
-      }
-   }*/
+
 }
 
 TLorentzVector* ssb_analysis::METSmear(std::vector<double> v_dpt, std::vector<double> v_dpx, std::vector<double> v_dpy, TLorentzVector* met_ )
@@ -3047,85 +2376,12 @@ void ssb_analysis::BTaggigSFApply()
       v_Jet_flav.push_back(abs(Jet_HadronFlavour->at(idx_))); 
    } 
 
-   if( !TString(FileName_).Contains( "Data" ) ) {evt_weight_ = SSBEffcal->Btagging_EvenWeight( v_Jet_pT, v_Jet_eta, v_Jet_bDisc, bdisccut,v_Jet_flav )*evt_weight_;}
+   //if( !TString(FileName_).Contains( "Data" ) ) {evt_weight_ = SSBEffcal->Btagging_EvenWeight( v_Jet_pT, v_Jet_eta, v_Jet_bDisc, bdisccut,v_Jet_flav )*evt_weight_;}
+   if( !TString(FileName_).Contains( "Data" ) ) {evt_weight_ = SSBEffcal->Btagging_EvenWeightv2( v_Jet_pT, v_Jet_eta, v_Jet_bDisc, bdisccut,v_Jet_flav , "central")*evt_weight_;}
    else { evt_weight_ = 1; }
-   if ( isAllSyst == true )
-   {
-      double b_sf_cent = 1.0;
-      //b_sf_cent = SSBEffcal->Btagging_EvenWeightSys(v_Jet_pT,v_Jet_eta,v_Jet_bDisc,bdisccut,"Central");
-      b_sf_cent = SSBEffcal->Btagging_EvenWeightSys( v_Jet_pT, v_Jet_eta, v_Jet_bDisc, bdisccut,v_Jet_flav,"Central");
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      {
-         if ( !TString(FileName_).Contains( "Data") ){
-            if ( v_SystFullName[i].Contains("Jet")  ){continue;}
-            else if ( v_SystFullName[i].Contains("BTagSF") || v_SystFullName[i].Contains("BTagEff") )
-            {
-               //v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->Btagging_EvenWeightSys(v_Jet_pT, v_Jet_eta, v_Jet_bDisc, bdisccut,v_SystFullName[i]);
-               v_SystEvt[i] = v_SystEvt[i]*SSBEffcal->Btagging_EvenWeightSys( v_Jet_pT, v_Jet_eta, v_Jet_bDisc, bdisccut,v_Jet_flav,v_SystFullName[i]);
-            }
-            else {
-               v_SystEvt[i] = v_SystEvt[i]*b_sf_cent;
-            }
-         }
-         else { // Data 
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i]; 
-      }
-   }
-}
-void ssb_analysis::BTaggigSFApplyJESR(std::vector<int>v_jidx, std::vector<TLorentzVector*>v_jtl, int sysidx_)
-{
-   if( TString(FileName_).Contains( "Data" ) ) {return;}
-   std::vector<double> v_Jet_pT;
-   std::vector<double> v_Jet_eta;
-   std::vector<double> v_Jet_bDisc;
-   std::vector<int> v_Jet_flav;
-   v_Jet_pT.clear();
-   v_Jet_eta.clear();
-   v_Jet_bDisc.clear();
-   v_Jet_flav.clear();
-   for ( int ij = 0; ij < v_jidx.size(); ++ij )
-   {
-      int idx_ = v_jidx[ij];
-      TLorentzVector* jidx_ = v_jtl[ij];
-      v_Jet_pT.push_back(jidx_->Pt()); 
-      v_Jet_eta.push_back(jidx_->Eta()); 
-      v_Jet_bDisc.push_back(Jet_bDisc->at(idx_)); 
-      v_Jet_flav.push_back(abs(Jet_HadronFlavour->at(idx_))); 
-   }
-   if ( isAllSyst == true )
-   {
-      v_SystEvt[sysidx_] = v_SystEvt[sysidx_]*SSBEffcal->Btagging_EvenWeightSys(v_Jet_pT,v_Jet_eta,v_Jet_bDisc,bdisccut,v_Jet_flav,"Central"); 
-      m_Syst_EvtW[ v_SystFullName[sysidx_] ] = v_SystEvt[sysidx_]; 
-   }
-}
-void ssb_analysis::BTaggigSFApplyDilu(){
-   evt_weight_beforeBtag_ = 1;
-   evt_weight_beforeBtag_ = evt_weight_;
-   if( TString(FileName_).Contains( "Data" ) ) {return;}
-   std::vector<double> v_Jet_pT;
-   std::vector<double> v_Jet_eta;
-   std::vector<double> v_Jet_bDisc;
-   std::vector<int> v_Jet_flav;
-   v_Jet_pT.clear();
-   v_Jet_eta.clear();
-   v_Jet_bDisc.clear();
-   v_Jet_flav.clear();
-   TLorentzVector* jet_ = new TLorentzVector();
-   for ( int ijet = 0; ijet < v_jet_idx.size(); ++ijet )
-   {
-      int idx_ = v_jet_idx[ijet];
-      jet_ = (TLorentzVector*)v_jet_TL[ijet];
-      v_Jet_pT.push_back(jet_->Pt()); 
-      v_Jet_eta.push_back(jet_->Eta()); 
-      v_Jet_bDisc.push_back(Jet_bDisc->at(idx_)); 
-      v_Jet_flav.push_back(abs(Jet_HadronFlavour->at(idx_))); 
-   } 
-
-   if( !TString(FileName_).Contains( "Data" ) ) {evt_weight_ = SSBEffcal->Btagging_EvenWeight( v_Jet_pT, v_Jet_eta, v_Jet_bDisc, bdisccut,v_Jet_flav )*evt_weight_;}
 
 }
+
 void ssb_analysis::BJetDefiner(std::vector<int> v_jets, std::vector<int> v_bjets)
 {
    //////////////////
@@ -3203,70 +2459,7 @@ void ssb_analysis::BJetDefiner()
       bJet2Up = Jet2Up;
    }
    else { cout << "you should check out nbjet cut!! Error about v_bjetup_TL !! " << endl; }
-   if (isAllSyst == true) 
-   { 
-      if( v_bjetdn_TL.size() > 1)
-      {
-         bJet1Dn = v_bjetdn_TL.at(0); 
-         bJet2Dn = v_bjetdn_TL.at(1);
-      }
-      else if ( v_bjetdn_TL.size() > 0 )
-      {  
-         bJet1Dn = v_bjetdn_TL.at(0);
-         for ( int i = 0; i < v_jetdn_idx.size(); ++i )
-         {
-            if ( v_jetdn_idx[i] != v_bjetdn_idx[0] ){ bJet2Dn = v_jetdn_TL[i]; break; }
-         }
-      }
-      else if ( v_bjetdn_TL.size() == 0 )
-      {
-         bJet1Dn = Jet1Dn;
-         bJet2Dn = Jet2Dn;
-      }
-      
-      else { cout << "you should check out nbjet cut!! Error about v_bjetdn_TL !! " << endl; }
-      
-      /// For JER ShiftedUp Jet ///
-      if( v_bjetresup_TL.size() > 1)
-      {
-         bJet1JERUp = v_bjetresup_TL.at(0); 
-         bJet2JERUp = v_bjetresup_TL.at(1);
-      }
-      else if ( v_bjetresup_TL.size() > 0 )
-      {  
-         bJet1JERUp = v_bjetresup_TL.at(0);
-         for ( int i = 0; i < v_jetresup_idx.size(); ++i )
-         {
-            if ( v_jetresup_idx[i] != v_bjetresup_idx[0] ){ bJet2JERUp = v_jetresup_TL[i]; break; }
-         }
-      }
-      else if ( v_bjetresup_TL.size() == 0 )
-      {
-         bJet1JERUp = Jet1JERUp;
-         bJet2JERUp = Jet2JERUp;
-      }
-      else { cout << "you should check out nbjet cut!! Error about v_bjetup_TL !! " << endl; }
-      /// For JER ShiftedDown Jet ///
-      if( v_bjetresdn_TL.size() > 1)
-      {
-         bJet1JERDn = v_bjetresdn_TL.at(0); 
-         bJet2JERDn = v_bjetresdn_TL.at(1);
-      }
-      else if ( v_bjetresdn_TL.size() > 0 )
-      {  
-         bJet1JERDn = v_bjetresdn_TL.at(0);
-         for ( int i = 0; i < v_jetresdn_idx.size(); ++i )
-         {
-            if ( v_jetresdn_idx[i] != v_bjetresdn_idx[0] ){ bJet2JERDn = v_jetresdn_TL[i]; break; }
-         }
-      }
-      else if ( v_bjetresdn_TL.size() == 0 )
-      {
-         bJet1JERDn = Jet1JERDn;
-         bJet2JERDn = Jet2JERDn;
-      }
-      else { cout << "you should check out nbjet cut!! Error about v_bjetdn_TL !! " << endl; }
-   }
+
 }
 /////////////////////
 //Double batagging //
@@ -3648,22 +2841,7 @@ void ssb_analysis::TopPtReweightApply()
    else {topptreweight =1;}
    evt_weight_ = evt_weight_*topptreweight;
 
-   if ( isAllSyst == true )
-   {
-      for( int i =0; i < v_SystFullName.size(); ++i )
-      {  
-         double topptrew_allsys =1; 
-         if ( !TString(FileName_).Contains("Data") )
-         {
-            if ( TString(v_SystFullName[i]).Contains("TopPt") && TString(FileName_).Contains("TTJets") ){ v_SystEvt[i] = v_SystEvt[i]*CalTopPtRewight("Apply");}
-            else { v_SystEvt[i]=v_SystEvt[i];}
-         }
-         else {
-            v_SystEvt[i]=1;
-         }
-         m_Syst_EvtW[ v_SystFullName[i] ] = v_SystEvt[i];
-      } // apply MC scale factor //
-   }
+   return;
 }
 TLorentzVector* ssb_analysis::JERSmearing(TLorentzVector *jet, int idx_, TString op_)
 {
@@ -3730,85 +2908,6 @@ TLorentzVector* ssb_analysis::ApplyJetPhiRes(TLorentzVector *jet, int idx_, TStr
    //cout << "after smeared variedjet pt : " << variedjet->Pt()  << " Eta : " << variedjet->Eta() << " phi " << variedjet->Phi() << " Energy : " << variedjet->Energy() << endl;
    return  variedjet;
 }
-void ssb_analysis::ApplyJetPtPhiDilution()
-{
-   /// Find bJet1 & bJet2 in v_jet_TL !!!
-   bool isPtDilu = false;
-   bool isPhiDilu = false;
-   //if ( JetPtPhiDil == false ){cout << "No excute ApplyJetPtPhiDilution JetPtPhiDil false " << endl;return;}
-   if (bAndbBarDil == true) {return;}
-   if (JetPtResDil != "None" && JetPtResDil != "none") {isPtDilu = true;}
-   if (JetPhiResDil != "None" && JetPhiResDil != "none") {isPhiDilu = true;}
-   if (isPtDilu && isPhiDilu) {cout << "You should check out your options of pt & phi dilution"<< endl;return;}
-   if (isAllSyst&& (isPtDilu ==true ||isPhiDilu == true )) {cout << "You should turn off your Allsys options "<< endl;return;}
-   if ( ( isPtDilu == false ) && (isPhiDilu==false) ){cout << "No excute ApplyJetPtPhiDilution" << endl;return;}
-   bool findbjet1 = false;
-   bool findbjet2 = false;
-   int bjet1ind = -1;
-   int bjet2ind = -1;
-   int njetidx = 0;
-
-   double bj1pt = bJet1->Pt();
-   double bj1px = bJet1->Px();
-   double bj1py = bJet1->Py();
-
-   double bj2pt = bJet2->Pt();
-   double bj2px = bJet2->Px();
-   double bj2py = bJet2->Py();
-
-   std::vector<double> v_diff_pt;
-   std::vector<double> v_diff_px;
-   std::vector<double> v_diff_py;
-
-   TLorentzVector* empty = new TLorentzVector();
-   TString b1op_ = "";
-   TString b2op_ = "";
-
-   if (FindSameObj(empty,bJet1) ==true ) {return;}
-   if (FindSameObj(empty,bJet2) ==true ) {return;}
-   for (std::vector<TLorentzVector*>::iterator it = v_jet_TL.begin(); it != v_jet_TL.end(); ++it)
-   {
-      //cout << " v_jet_TL !! " <<endl;
-      if (FindSameObj(bJet1,(*it))) { findbjet1 = true; bjet1ind = njetidx; };
-      if (FindSameObj(bJet2,(*it))) { findbjet2 = true; bjet2ind = njetidx; };
-      njetidx++;
-   }
-   /// Apply JetPt-1sig.Vari !!
-   //cout << "JetPtResDil : " << JetPtResDil << endl;
-   if (isPtDilu){
-      if ( JetPtResDil == "UpUp" || JetPtResDil == "upup") { b1op_ = "Up"; b2op_ = "Up"; }
-      else if ( JetPtResDil == "UpDown" || JetPtResDil == "updown") { b1op_ = "Up"; b2op_ = "Down"; }
-      else if ( JetPtResDil == "DownUp" || JetPtResDil == "downup") { b1op_ = "Down"; b2op_ = "Up"; }
-      else if ( JetPtResDil == "DownDown" || JetPtResDil == "downdown") { b1op_ = "Down"; b2op_ = "Down"; }
-      else { b1op_ = "None"; b2op_ = "None`"; }
-      bJet1 = ApplyJetPtRes(bJet1,v_jet_idx[bjet1ind], b1op_);
-      bJet2 = ApplyJetPtRes(bJet2,v_jet_idx[bjet2ind], b2op_); 
-   }
-   if (isPhiDilu){
-      if ( JetPhiResDil == "UpUp" || JetPhiResDil == "upup") { b1op_ = "Up"; b2op_ = "Up"; }
-      else if ( JetPhiResDil == "UpDown" || JetPhiResDil == "updown") { b1op_ = "Up"; b2op_ = "Down"; }
-      else if ( JetPhiResDil == "DownUp" || JetPhiResDil == "downup") { b1op_ = "Down"; b2op_ = "Up"; }
-      else if ( JetPhiResDil == "DownDown" || JetPhiResDil == "downdown") { b1op_ = "Down"; b2op_ = "Down"; }
-      else { b1op_ = "None"; b2op_ = "None`"; }
-      bJet1 = ApplyJetPhiRes(bJet1,v_jet_idx[bjet1ind], b1op_);
-      bJet2 = ApplyJetPhiRes(bJet2,v_jet_idx[bjet2ind], b2op_); 
-   }
-   /// Changed the component of v_jet_TL !!
-   v_jet_TL[bjet1ind] = bJet1;
-   v_jet_TL[bjet2ind] = bJet2;
-
-   v_diff_pt.push_back(bJet1->Pt() - bj1pt);
-   v_diff_pt.push_back(bJet2->Pt() - bj2pt);
-   v_diff_px.push_back(bJet1->Px() - bj1px);
-   v_diff_px.push_back(bJet2->Px() - bj2px);
-   v_diff_py.push_back(bJet1->Py() - bj1py);
-   v_diff_py.push_back(bJet2->Py() - bj2py);
-
-   /////////////////////
-   /// Calculate MET /// 
-   /////////////////////
-   Met = METSmear(v_diff_pt,v_diff_px,v_diff_py,Met);
-}
 
 bool ssb_analysis::FindSameObj(TLorentzVector* ref, TLorentzVector* tar)
 {
@@ -3873,9 +2972,7 @@ bool ssb_analysis::FindSameObj(TLorentzVector* ref, TLorentzVector* tar)
    /////////////////////
    Met = METSmear(v_diff_pt,v_diff_px,v_diff_py,Met);
 }*/
-void ssb_analysis::MakeVecforTL()
-{
-}
+
 void ssb_analysis::ClearVectors()
 {
    v_lepton_Id->clear();
@@ -3892,101 +2989,7 @@ void ssb_analysis::ClearVectors()
    v_el_iso_jcl->clear();
    v_el_Id_jcl->clear();
 }
-void ssb_analysis::ReadDupleList()
-{
-   if (!FileName_.Contains("Data")){ return; } 
-   if (FileName_.Contains("Data_Double")){ return; } 
-   if (FileName_.Contains("Data_MuonElec")){ return; } 
-   /// Duplicate Event ///
-   std::map<int,std::vector<int> > m_test;
-   TString evtfileName = FileName_;
-   char bar = '_';
-/*   if (Decaymode == "dimu" ) {evtfileName.ReplaceAll("Single","Double");}
-   else if ( Decaymode == "dielec" ){ evtfileName.ReplaceAll("Single","Double"); }
-   else if ( Decaymode == "muel" ){ evtfileName.ReplaceAll("Single","Double"); }
-   else { return;}*/
-   if (Decaymode.Contains("dimu") ) {evtfileName="Data_DoubleMuon_Run2016";}
-   else if ( Decaymode.Contains("dielec") ){ evtfileName="Data_DoubleEG_Run2016"; }
-   else if ( Decaymode.Contains("muel") ){ evtfileName="Data_MuonEG_Run2016"; }
-   else { return;}
-   int NumRunFiles_ = 1;
-   if (FileName_.Contains("Run2016B")){ NumRunFiles_ = 176; evtfileName.ReplaceAll("Run2016","Run2016B"); } 
-   else if (FileName_.Contains("Run2016C"))   { NumRunFiles_ = 58;  evtfileName.ReplaceAll("Run2016","Run2016C"); } 
-   else if (FileName_.Contains("Run2016D"))   { NumRunFiles_ = 98;  evtfileName.ReplaceAll("Run2016","Run2016D"); } 
-   else if (FileName_.Contains("Run2016E"))   { NumRunFiles_ = 83;  evtfileName.ReplaceAll("Run2016","Run2016E"); } 
-   else if (FileName_.Contains("Run2016F"))   { NumRunFiles_ = 61;  evtfileName.ReplaceAll("Run2016","Run2016F"); } 
-   else if (FileName_.Contains("Run2016G"))   { NumRunFiles_ = 143; evtfileName.ReplaceAll("Run2016","Run2016G"); } 
-   else if (FileName_.Contains("Run2016HV2")) { NumRunFiles_ = 155; evtfileName.ReplaceAll("Run2016","Run2016HV2"); } 
-   else if (FileName_.Contains("Run2016HV3")) { NumRunFiles_ = 5;   evtfileName.ReplaceAll("Run2016","Run2016HV3"); } 
-   else {  cout << "Check Out Your InputFiles !!" << endl;  return;  } 
 
-   FILE *XSectionInfo;
-   char LumiNum[1000];
-   char EvtNum[1000];
-   char RunNum[1000];
-   char col1[1000];
-   int lumi_number;
-   int evt_number;
-   int run_number;
-   dilepevt.clear();
-//   int testlines =0;
-   for (int i = 1; i < NumRunFiles_+1; ++i)
-   {
-      ostringstream ostr;
-      ostr.str("");
-      ostr << i;
-      string ostr_ = "_" + ostr.str() + ".txt";
-      string evt_file = evtfileName.Data()  + ostr_;
-      string slash = "/";
-      string tttt= evtfileName.Data();
-//      string evt_filePath = "../EventList/" + tttt + slash + evt_file;
-      //string evt_filePath = "/d3/scratch/sha/Analyses/SSB/MyAnalysis/25ns_Anlysis/Run2016/RemoveDuplicatedEvt/EventList/" + tttt + slash + evt_file;
-      string evt_filePath = "/d0/scratch/sha/Analyses/SSB/MyAnalysis/25ns_Anlysis/Run2016/RemoveDuplicatedEvt/EventList/" + tttt + slash + evt_file;
-   //   cout << "evt_filePath : " << evt_filePath << endl;
-      XSectionInfo = fopen(evt_filePath.c_str(),"r");                                                                               
-
-      if (XSectionInfo !=NULL){
-         while (fscanf(XSectionInfo, "%s %s %d %s %d %s %d \n",RunNum,col1,&run_number, LumiNum,&lumi_number, EvtNum,& evt_number ) != EOF)
-         {  //testlines++;
-            dilepevt[run_number][lumi_number][evt_number]=1;
-            //273730 Info_Luminosity: 1993 Info_EventNumber: -2023987825
-            //if (run_number == 273730 && lumi_number == 1993 && evt_number == -2023987825  ) { cout << "CHECK ~!!!!!!:" << run_number<< " : "<< lumi_number << " : " <<evt_number  << endl;}
-         }// End of ReadFile
-         fclose(XSectionInfo);
-      }
-      else {
-         delete XSectionInfo;
-      }
-   }// End of loop of fileList //
-   // Check out Dilepton List 
-//   cout << " testlines : " << testlines << endl;
-/*   int test2lines =0.0; 
-   /// For Debug ///
-   for (map<int, map<int, map<int, int> > >::iterator iter = dilepevt.begin(); iter != dilepevt.end(); ++iter )
-   {  //cout << "iter first : " << iter->first << endl;
-      for ( map<int, map<int, int> >::iterator itsub = iter->second.begin(); itsub != iter->second.end(); ++itsub)
-      {  
-         for (map<int, int>::iterator ivec = itsub->second.begin(); ivec != itsub->second.end(); ++ivec)
-         {
-           test2lines++;
-           //cout << "iter->first : " << iter->first  << "itsub->first : " << itsub->first << " ivec->first : " << ivec->first << endl; 
-         }
-      }
-   }
-
-   cout << " test2lines: " << test2lines << endl;*/
- 
-   cout << "End of Read Dilep Evt" << endl;
-}
-bool ssb_analysis::RMDuplEvt(int run_, int lumi_, int evt_num_)
-{
-   /// Duplicate Event ///
-   bool vetoduple = false;
-   if (dilepevt[run_][lumi_][evt_num_] == 0) {vetoduple =true;} // No Duplicated Event //
-//   else {cout << "dilepevt[run_][lumi_][evt_num_] : " << dilepevt[run_][lumi_][evt_num_] << endl; }
-//   cout << "Remove Duplicate Event " << endl;
-   return vetoduple; 
-}
 void ssb_analysis::SetGenLepAnLep()
 {
    GenLep   = new TLorentzVector(); 

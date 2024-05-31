@@ -16,8 +16,13 @@
  ************************************************************/
 
 #include <string>
-#include <TF1.h>
-#include <TH1.h>
+#include <iostream>
+#include <exception>
+#include <algorithm>
+#include <sstream>
+#include "TF1.h"
+#include "TH1.h"
+#include "TSystem.h"
 
 
 class BTagEntry
@@ -133,7 +138,6 @@ protected:
 
 #endif  // BTagCalibration_H
 
-
 #ifndef BTagCalibrationReader_H
 #define BTagCalibrationReader_H
 
@@ -145,45 +149,42 @@ protected:
  *
  ************************************************************/
 
-#include <memory>
+#include <map>
 #include <string>
-
+#include <vector>
+#include <TF1.h>
 
 
 class BTagCalibrationReader
 {
 public:
-  class BTagCalibrationReaderImpl;
-
   BTagCalibrationReader() {}
-  BTagCalibrationReader(BTagEntry::OperatingPoint op,
-                        const std::string & sysType="central",
-                        const std::vector<std::string> & otherSysTypes={});
-
-  void load(const BTagCalibration & c,
-            BTagEntry::JetFlavor jf,
-            const std::string & measurementType="comb");
+  BTagCalibrationReader(const BTagCalibration* c,
+                        BTagEntry::OperatingPoint op,
+                        std::string measurementType="comb",
+                        std::string sysType="central");
+  ~BTagCalibrationReader() {}
 
   double eval(BTagEntry::JetFlavor jf,
               float eta,
               float pt,
               float discr=0.) const;
 
-  double eval_auto_bounds(const std::string & sys,
-                          BTagEntry::JetFlavor jf,
-                          float eta,
-                          float pt,
-                          float discr=0.) const;
-
-  std::pair<float, float> min_max_pt(BTagEntry::JetFlavor jf,
-                                     float eta,
-                                     float discr=0.) const;
-
 protected:
-  std::shared_ptr<BTagCalibrationReaderImpl> pimpl;
+  struct TmpEntry {
+    float etaMin;
+    float etaMax;
+    float ptMin;
+    float ptMax;
+    float discrMin;
+    float discrMax;
+    TF1 func;
+  };
+  void setupTmpData(const BTagCalibration* c);
+
+  BTagEntry::Parameters params;
+  std::map<BTagEntry::JetFlavor, std::vector<TmpEntry> > tmpData_;
+  std::vector<bool> useAbsEta;
 };
 
-
 #endif  // BTagCalibrationReader_H
-
-

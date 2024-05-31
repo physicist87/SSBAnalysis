@@ -29,15 +29,15 @@ class SSBEffCal
 {
    public:
 
-      SSBEffCal();
+      SSBEffCal(string="");
       ~SSBEffCal();
       //declare functions
-      void getEff();
+      //void getEff();
 
       /////////////////
       /// Lepton SF ///
       /////////////////
-      double DoubleMuon_Eff( TLorentzVector* lep1, TLorentzVector* lep2 );
+      //double DoubleMuon_Eff( TLorentzVector* lep1, TLorentzVector* lep2 );
       //double DoubleMuon_EffROOT( TLorentzVector* lep1, TLorentzVector* lep2, TString muidsys,  TString muisosys );
       double DoubleMuon_EffROOT( TLorentzVector* lep1, TLorentzVector* lep2, TString muidsys,  TString muisosys, TString tracksys );
       double DoubleElec_EffROOT( TLorentzVector* lep1, TLorentzVector* lep2, double ele1sueta, double ele2sueta, TString eleidsys, TString elecrecosys);
@@ -61,6 +61,7 @@ class SSBEffCal
       double Btagging_EvenWeight(TLorentzVector* jet, double btagdisc, double btagcut );
       double Btagging_EvenWeight(std::vector<double>v_jetpt,std::vector<double>v_jeteta ,std::vector<double>v_btagdisc, double btagcut, std::vector<int> v_jetf );
       double Btagging_EvenWeightSys(std::vector<double>v_jetpt,std::vector<double>v_jeteta ,std::vector<double>v_btagdisc, double btagcut, std::vector<int> v_jetf ,TString sys_ );
+      double Btagging_EvenWeightv2(std::vector<double>v_jetpt, std::vector<double>v_jeteta, std::vector<double>v_btagdisc, double btagcut, std::vector<int> v_jetf, string Syst );
 
    private:
 
