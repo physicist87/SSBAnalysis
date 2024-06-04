@@ -38,7 +38,7 @@ int main(int argc, char **argv)
       printf("At least, you have to set 1, 2\n");
       printf("1. Input filelist\n");
       printf("2. Output file\n");
-      printf("3. GenLoop On or Off\n");
+      printf("3. Config file name\n");
 /*      printf("4. Muon Candidate Eta Cut On or Off\n");
       printf("5. Muon Candidate Eta Cut \n");
       printf("6. Charge Opposite Sign On or Off\n");
@@ -62,10 +62,9 @@ int main(int argc, char **argv)
    char *outname = argv[2];
    printf("Output file name = %s\n",outname);
 
-   int genLoop_on = atoi(argv[3]);
-   printf("Turn On or Off GenLoop : %d\n", genLoop_on);
-   cout << "dkdkdk" << genLoop_on << endl;
-   
+   char *confname = argv[3];
+   printf("Config file name = %s\n",confname);
+
 //   char *logfile = argv[4];
 //   printf("Output Log File Name = %s.txt\n",logfile);
 /*   Bool_t trigger_pass_on =false;
@@ -122,44 +121,16 @@ int main(int argc, char **argv)
 
 
 
-   //gDirectory->Add(ch);
-   //gDirectory->pwd();
-   //gDirectory->ls("-l");
-   //gDirectory->cd("rootree:/sync");
-   //gDirectory->pwd();
-   //gDirectory->GetList()->FindObject("MuID");
-   //gDirectory->Print();
-   //cout <<"ssibal " << gDirectory->GetPath() << endl;
-   //TTree* tree = (TTree*)gDirectory->Get("sync/MuID");
+   ssb_analysis *ssb = new ssb_analysis(ch, confname);
+   ssb->SetInputFileName(flist);
+   ssb->SetOutputFileName(outname);
+//   ssb->SetConfigFile(flist);
+   ssb->GetNtupleTotalEvent( ch->GetEntries() );
+   ssb->Start();
+   ssb->Loop( flist );
+   ssb->End();
+      
 
-   ssb_analysis *ssb = new ssb_analysis(ch);
-   if ( genLoop_on == 1 ) 
-   {
-      
-      ssb->SetInputFileName(flist);
-      ssb->SetOutputFileName(outname);
-      ssb->GetNtupleTotalEvent( ch->GetEntries() );
-      ssb->Start( genLoop_on );
-      ssb->Loop( flist );
-      ssb->End();
-
-   }
-   else if ( genLoop_on == 0 )
-   {
-      
-      ssb->SetInputFileName(flist);
-      ssb->SetOutputFileName(outname);
-      ssb->GetNtupleTotalEvent( ch->GetEntries() );
-      ssb->Start( genLoop_on );
-      ssb->Loop( flist );
-      ssb->End();
-      
-   }
-   else if ( genLoop_on == 2 )
-   {
-  
-   }
-   else { cout << "genLoop_on has wrong value..." << endl;}
    delete ssb;
    cout << "Delete ssb..." << endl << endl; 
    delete ch;
