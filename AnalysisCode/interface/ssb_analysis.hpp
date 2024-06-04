@@ -93,11 +93,6 @@ class ssb_analysis : public SSBTree
 
       // Make TL for object //
       void MakeVecforTL();
-      // EventRun Selection
-      bool EveRun();
-      // Remove Duplicate Event
-      void ReadDupleList();
-      bool RMDuplEvt(int run_,int lumi_, int evt_num_);
 
       // METFilter Function  
       bool METFilterAPP();
@@ -367,8 +362,6 @@ class ssb_analysis : public SSBTree
       // PileUp Systematic ...
       string PileUpMCFile;
       string PileUpDATAFile;
-      string PileUpDATAFileUp;
-      string PileUpDATAFileDown;
       TString PileUpSys;
       TString L1PreFireSys;
 
@@ -1051,8 +1044,6 @@ ssb_analysis::ssb_analysis(TTree *tree, string confName)
    DecayTableSys  = SSBConfReader->GetText( "DecayTableSys"      ); 
    PileUpMCFile = SSBConfReader->GetText( "PileUpMCFileName"     );
    PileUpDATAFile = SSBConfReader->GetText( "PileUpDATAFileName" );
-   PileUpDATAFileUp = SSBConfReader->GetText( "PileUpUpFileName" );
-   PileUpDATAFileDown = SSBConfReader->GetText( "PileUpDownFileName" );
    PileUpSys    = SSBConfReader->GetText( "PileUpSys"            );
    L1PreFireSys    = SSBConfReader->GetText( "L1PreFireSys"            );
    TopPtSys    = SSBConfReader->GetText(  "TopPtSys"             );
@@ -1115,7 +1106,7 @@ ssb_analysis::~ssb_analysis()
    if (!fChain) return;
    delete fChain->GetCurrentFile();
    delete ssbcpviol;
-   delete SSBEffcal ;
+   delete SSBEffcal;
    delete fout;
    delete SSBConfReader;
    delete ssbflsolver;

@@ -783,8 +783,6 @@ void ssb_analysis::DeclareHistos()
       h_bTagEff[i]  = new TH1D(Form("h_bTagEff_%d",i), Form("BTagging Weight %s",cutflowName[i+5].Data()), 1000, -5, 5); h_bTagEff[i]->Sumw2();
    }
    h_PileUp      = new TH1D(Form("h_PileUp"), Form("hPileUp"), 1000, 0.0, 100); h_PileUp->Sumw2();// For Closure test // 
-   h_PileUp_Up   = new TH1D(Form("h_PileUp_Up"), Form("hPileUp_Up"), 1000, 0.0, 100); h_PileUp_Up->Sumw2();// For Closure test // 
-   h_PileUp_Down = new TH1D(Form("h_PileUp_Down"), Form("hPileUp_Down"), 1000, 0.0, 100); h_PileUp_Down->Sumw2();// For Closure test // 
 
    h_NumEl  = new TH1D(Form("h_NumEl" ), Form("hNumEl" ), 10, 0.0, 10); h_NumEl->Sumw2(); 
    h_NumMu  = new TH1D(Form("h_NumMu" ), Form("hNumMu" ), 10, 0.0, 10); h_NumMu->Sumw2(); 
@@ -954,6 +952,10 @@ void ssb_analysis::SetInputFileName( char *inname )
    char unsco_ = '_';
    Size_t unscoIndex = FileName_.Last(unsco_);
    FileName_.Remove(unscoIndex, FileName_.Length());
+   if (FileName_.Contains("/")){
+      unscoIndex = FileName_.Last('/');
+      FileName_.Remove(0,unscoIndex+1);
+   }
    //cout << "FileName_ : " << FileName_ << endl;
    
 }
@@ -1005,10 +1007,18 @@ void ssb_analysis::MCSF()
       }
       fclose(xsecs_);
    }
-   else {return;} 
+   else {cout << "No xsec_filePath !!!" << xsec_filePath << endl;return;} 
    //cout << "Lumi : " << Lumi << endl;
    double lumi = Lumi/1000000;
-   mc_sf_ = (m_sam_xsec[FileName_.Data()]*m_sam_br[FileName_.Data()]*lumi)/m_sam_posi_nega[FileName_.Data()];
+   auto it = m_sam_xsec.find(FileName_.Data());
+   if (it !=  m_sam_xsec.end()){
+      cout << "Key " << FileName_.Data() << " found in the map."<< endl;
+      mc_sf_ = (m_sam_xsec[FileName_.Data()]*m_sam_br[FileName_.Data()]*lumi)/m_sam_posi_nega[FileName_.Data()];
+   }
+   else {
+      mc_sf_ =1.;
+      cout << "Key " << FileName_.Data() << " not found in the map. mc sf is 1" << mc_sf_ << endl;
+   }
    return;
 }
 
@@ -1184,31 +1194,7 @@ void ssb_analysis::NumPVCount()
    //cout << "counted Num PV " << endl;
 }
 
-bool ssb_analysis::EveRun()
-{
-   bool everun = false;
-   if (TString(FileName_).Contains( "Data" ) ) // Only Data
-   {
-      if ( TString(FileName_).Contains( "Jul" ) ) //Jul-Data
-      {
-         if ( TString(Decaymode).Contains( "dimuon" ) || TString(Decaymode).Contains( "dielec" ) || TString(Decaymode).Contains( "muel" )  )
-         {
-            if (Info_RunNumber >= 246908 && Info_RunNumber < 251604 ) { everun = true; }
-         }
-         else { cout << "YOU DON'T USE THIS FUNCTION , CHECH DECAY MODE" << endl;}
-      }
-      else 
-      {
-         if ( TString(Decaymode).Contains( "dimuon" ) || TString(Decaymode).Contains( "dielec" ) || TString(Decaymode).Contains( "muel" ) )
-         {
-            if (Info_RunNumber >= 251604 && Info_RunNumber <= 251883 ) { everun = true; }
-         }
-         else { cout << "YOU DON'T USE THIS FUNCTION , CHECH DECAY MODE" << endl;}
-      }//prompt
-   }
-   else { everun = true;} //MC
-   return everun;
-}
+
 bool ssb_analysis::ChannelIndex()
 {
    bool chan_cut = true;
@@ -1360,12 +1346,12 @@ bool ssb_analysis::Trigger()
          if ( TString(FileName_).Contains( "Single") ) {
             seltrigName = SLtrigName;
             vetotrigName = DLtrigName;
-            cout << "selected!! " << endl;
+            //cout << "selected!! " << endl;
             ispassselTrig_ = SelTrigger(seltrigName);
-            cout << "ispassselTrig_ : " << ispassselTrig_ << endl;
-            cout << "veto !! " << endl;
+            //cout << "ispassselTrig_ : " << ispassselTrig_ << endl;
+            //cout << "veto !! " << endl;
             ispassvetoTrig_ = SelTrigger(vetotrigName);
-            cout << "ispassvetoTrig_ : " << ispassvetoTrig_ << endl;
+            //cout << "ispassvetoTrig_ : " << ispassvetoTrig_ << endl;
          }
          else if( TString(FileName_).Contains( "Double") || TString(FileName_).Contains( "MuonEG")) {
             seltrigName = DLtrigName;
@@ -1379,7 +1365,7 @@ bool ssb_analysis::Trigger()
 
       if (ispassvetoTrig_ == true) {trigpass = false;}
    }
-   cout << "trigger : " << trigpass << endl; 
+   //cout << "trigger : " << trigpass << endl; 
    return trigpass;
 }
 // Function of Muon Rocheser Correction //

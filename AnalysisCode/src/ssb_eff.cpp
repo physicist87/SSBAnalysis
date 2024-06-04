@@ -176,7 +176,6 @@ SSBEffCal::~SSBEffCal()
    delete reader; 
    delete readerup;
    delete readerdown;
-   delete readerlf; 
    delete calib;
 }   
 
@@ -979,7 +978,7 @@ double SSBEffCal::Btagging_EvenWeight( std::vector<double>v_jetpt, std::vector<d
 
          if (v_jetf[i] == 5){jflavor = BTagEntry::FLAV_B; reader_ = reader; v_btagCal = v_reader; }
          else if (v_jetf[i] == 4){jflavor = BTagEntry::FLAV_C; reader_ = reader; v_btagCal = v_reader; }
-         else { jflavor = BTagEntry::FLAV_UDSG; reader_ = readerlf; v_btagCal = v_readerlf; }
+         else { jflavor = BTagEntry::FLAV_UDSG;  v_btagCal = v_readerlf; }
 
          btag_eff_ = Btagging_Eff(v_jetpt[i], v_jeteta[i], jetbtag, BTagEffSys,v_jetf[i]);
          
