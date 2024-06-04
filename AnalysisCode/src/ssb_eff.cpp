@@ -174,8 +174,8 @@ SSBEffCal::~SSBEffCal()
    delete f_elereco;
    delete f_trg;
    delete reader; 
-   delete readerup;
-   delete readerdown;
+   //delete readerup;
+   //delete readerdown;
    delete calib;
 }   
 
