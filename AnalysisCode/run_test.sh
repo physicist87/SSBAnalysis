@@ -2,7 +2,8 @@
 
 inputlists=("Data_SingleMuon_Run2016Bv2_1")
 # inputlists=("DYJetsToLL_M_10To50_1")
-runPeriod="UL2016PostVFP"
+#runPeriod="UL2016PostVFP"
+runPeriod="UL2017"
 StudyName="Testv1"
 Channels="MuMu"
 Sample="TTbar_Signal"
@@ -28,7 +29,7 @@ configpath="ULSummer20/${runPeriod}/"
 for i in "${inputlists[@]}"; do
    mkdir -p output/${StudyName}/${runPeriod}/${Channels}/${Sample}
    # command line
+   #echo ./ssb_analysis ${runPeriod}/${i}.list ${StudyName}/${runPeriod}/${Channels}/${i}.root ${configpath}${confch}
    ./ssb_analysis ${runPeriod}/${Sample}/${i}.list ${StudyName}/${runPeriod}/${Channels}/$Sample/${i}.root ${configpath}${confch}
-   echo ./ssb_analysis ${runPeriod}/${i}.list ${StudyName}/${runPeriod}/${Channels}/${i}.root ${configpath}${confch}
 done
 

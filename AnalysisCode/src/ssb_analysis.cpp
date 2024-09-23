@@ -379,6 +379,7 @@ void ssb_analysis::Loop( char *logfile )
       evt_weight_ = 1;
 
       GetVariables();
+      MCSFApply();
       //////////////////////
 
       ///////////////////////////////////
@@ -677,7 +678,149 @@ void ssb_analysis::Loop( char *logfile )
                   FillHisto( h_Num_bJets[5], nbtagged, evt_weight_ );
 
                   //FillHisto( h_HT[5], AllJetpt, evt_weight_);
+                  SetUpKINObs();
+                  if (isKinSol)
+                  {
+                     FillHisto( h_EventWeight[8], evt_weight_  );
+                     FillHisto( h_cf_NLeptons[8], v_lepton_idx.size(), evt_weight_ );
+                  
+                     FillHisto( h_cf_Lep1pt[8] , (*Lep1).Pt()  , evt_weight_ );
+                     FillHisto( h_cf_Lep1eta[8], (*Lep1).Eta() , evt_weight_ );
+                     FillHisto( h_cf_Lep1phi[8], (*Lep1).Phi() , evt_weight_ );
+                     FillHisto( h_cf_Lep2pt[8] , (*Lep2).Pt()  , evt_weight_ );
+                     FillHisto( h_cf_Lep2eta[8], (*Lep2).Eta() , evt_weight_ );
+                     FillHisto( h_cf_Lep2phi[8], (*Lep2).Phi() , evt_weight_ );
+                     FillHisto( h_cf_NPV[8]    , num_pv        , evt_weight_ );
+                     FillHisto( h_cf_NJets[8]  , v_jet_idx.size(), evt_weight_ );
+                     FillHisto( h_cf_Jet1pt[8] , (*Jet1).Pt()  , evt_weight_ );
+                     FillHisto( h_cf_Jet1eta[8], (*Jet1).Eta() , evt_weight_ );
+                     FillHisto( h_cf_Jet1phi[8], (*Jet1).Phi() , evt_weight_ );
+                     FillHisto( h_cf_Jet2pt[8] , (*Jet2).Pt()  , evt_weight_ );
+                     FillHisto( h_cf_Jet2eta[8], (*Jet2).Eta() , evt_weight_ );
+                     FillHisto( h_cf_Jet2phi[8], (*Jet2).Phi() , evt_weight_ );
+                  
+                     FillHisto( h_cf_dilep_inv_mass[8], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
+                     FillHisto( h_cf_metpt[8] , Met->Pt() , evt_weight_ );
+                     FillHisto( h_cf_metphi[8], Met->Phi(), evt_weight_ );
+                  
+                     FillHisto( h_Lep1pt[8] , Lep1->Pt() , evt_weight_ );
+                     FillHisto( h_Lep2pt[8] , Lep2->Pt() , evt_weight_ );
+                     FillHisto( h_Lep1eta[8], Lep1->Eta(), evt_weight_ );
+                     FillHisto( h_Lep2eta[8], Lep2->Eta(), evt_weight_ );
+                     FillHisto( h_Lep1phi[8], Lep1->Phi(), evt_weight_ );
+                     FillHisto( h_Lep2phi[8], Lep2->Phi(), evt_weight_ );
+                    
+                     if (TString(Decaymode).Contains("muel"))
+                     { 
+                        FillHisto( h_Muonpt[8]  , TMuon->Pt()      , evt_weight_ );
+                        FillHisto( h_Elecpt[8]  , TElectron->Pt()  , evt_weight_ );
+                        FillHisto( h_Muoneta[8] , TMuon->Eta()     , evt_weight_ );
+                        FillHisto( h_Eleceta[8] , TElectron->Eta() , evt_weight_ );
+                        FillHisto( h_Muonphi[8] , TMuon->Phi()     , evt_weight_ );
+                        FillHisto( h_Elecphi[8] , TElectron->Phi() , evt_weight_ );
+                     }
+                     FillHisto( h_Jet1pt[8] , Jet1->Pt() , evt_weight_ );
+                     FillHisto( h_Jet2pt[8] , Jet2->Pt() , evt_weight_ );
+                     FillHisto( h_Jet1eta[8], Jet1->Eta(), evt_weight_ );
+                     FillHisto( h_Jet2eta[8], Jet2->Eta(), evt_weight_ );
+                     FillHisto( h_Jet1phi[8], Jet1->Phi(), evt_weight_ );
+                     FillHisto( h_Jet2phi[8], Jet2->Phi(), evt_weight_ );
+                     FillHisto( h_METpt[8]  , Met->Pt()  , evt_weight_ );
+                     FillHisto( h_METphi[8] , Met->Phi() , evt_weight_ );
+                     //FillHisto( h_HT[8]     , AllJetpt   , evt_weight_);
+                  
+                     FillHisto( h_DiLepMass[8], ( (*Lep1)+(*Lep2) ).M(), evt_weight_ );
+                  
+                     FillHisto( h_Num_PV[8]   , num_pv          , evt_weight_ );
+                     FillHisto( h_Num_Jets[8] , v_jet_idx.size(), evt_weight_ );
+                     FillHisto( h_Num_bJets[8], nbtagged        , evt_weight_ );
+                  
+                     if ( Top->Pt() > AnTop->Pt() ) { (*Top1) = (*Top); (*Top2) = (*AnTop); }
+                     else { (*Top1) = (*AnTop); (*Top2) = (*Top); }
 
+                  
+                     FillHisto( h_TopMass      , Top->M()         , evt_weight_ );
+                     FillHisto( h_Toppt        , Top->Pt()        , evt_weight_ );
+                     FillHisto( h_Topphi       , Top->Phi()       , evt_weight_ );
+                     FillHisto( h_TopRapidity  , Top->Rapidity()  , evt_weight_ );
+                     FillHisto( h_TopEnergy    , Top->Energy()    , evt_weight_ );
+                     FillHisto( h_AnTopMass    , AnTop->M()       , evt_weight_ );
+                     FillHisto( h_AnToppt      , AnTop->Pt()      , evt_weight_ );
+                     FillHisto( h_AnTopphi     , AnTop->Phi()     , evt_weight_ );
+                     FillHisto( h_AnTopRapidity, AnTop->Rapidity(), evt_weight_ );
+                     FillHisto( h_AnTopEnergy  , AnTop->Energy()  , evt_weight_ );
+                  
+                  
+                     FillHisto( h_W1Mass , W1->M()  , evt_weight_ );
+                     FillHisto( h_W2Mass , W2->M()  , evt_weight_ );
+                  
+                     FillHisto( h_W1Mt , W1->Mt()  , evt_weight_ );
+                     FillHisto( h_W2Mt , W2->Mt()  , evt_weight_ );
+                  
+                     FillHisto( h_bJet1Energy , bJet1->Energy()  , evt_weight_ );
+                     FillHisto( h_bJet2Energy , bJet2->Energy()  , evt_weight_ );
+                  
+                     FillHisto( h_bJetEnergy   , bJet->Energy()   , evt_weight_ );
+                     FillHisto( h_AnbJetEnergy , AnbJet->Energy() , evt_weight_ );
+                     FillHisto( h_bJetPt       , bJet->Pt()   , evt_weight_ );
+                     FillHisto( h_AnbJetPt     , AnbJet->Pt() , evt_weight_ );
+                     FillHisto( h_LepEnergy    , Lep->Energy()    , evt_weight_ );
+                     FillHisto( h_AnLepEnergy  , AnLep->Energy()  , evt_weight_ );
+                     FillHisto( h_NuEnergy     , Nu->Energy()     , evt_weight_ );
+                     FillHisto( h_AnNuEnergy   , AnNu->Energy()   , evt_weight_ );
+                  
+                     /// Kin Solver Purity ... ///
+                     FillHisto( h2_TopMassVsLepBMass    , Top->M() ,((*Lep)+(*AnbJet)).M()   , evt_weight_ );
+                     FillHisto( h2_AnTopMassVsLepBMass  , AnTop->M() ,((*AnLep)+(*bJet)).M()   , evt_weight_ );
+                     FillHisto( h2_AnLepBMassVsLepBMass , ((*Lep)+(*AnbJet)).M() ,((*AnLep)+(*bJet)).M()   , evt_weight_ );
+                  
+                     FillHisto( h_LepbJetMass   , ((*Lep)+(*AnbJet)).M() , evt_weight_ );
+                     FillHisto( h_AnLepbJetMass , ((*AnLep)+(*bJet)).M() , evt_weight_ );
+                  
+                     // Calculating Bjorken variables
+                     Bjorken( Lep , AnLep , bJet, AnbJet , Nu , AnNu ); 
+                  
+                     FillHisto( h_BjorkenX1, x1_bj, evt_weight_ );
+                     FillHisto( h_BjorkenX2, x2_bj, evt_weight_ );
+                     FillHisto( h_BjorkenX3, x3_bj, evt_weight_ );
+                     
+                     // Get CP-Violation Variables //
+                     v_recocp_O.clear();
+                     v_recocp_O.push_back( ssbcpviol->getO1Vari( Top, AnTop, AnLep, Lep )  );
+                     v_recocp_O.push_back( ssbcpviol->getO2Vari( Top, AnTop, bJet, AnbJet ) );
+                     v_recocp_O.push_back( ssbcpviol->getO3Vari( bJet, AnbJet, AnLep, Lep ) );
+                     v_recocp_O.push_back( ssbcpviol->getO4Vari( AnbJet, bJet, AnLep, Lep ) );
+                     v_recocp_O.push_back( ssbcpviol->getO5Vari( bJet , AnbJet, AnLep, Lep ) );
+                     v_recocp_O.push_back( ssbcpviol->getO6Vari( bJet , AnbJet, AnLep, Lep ) );
+                     v_recocp_O.push_back( ssbcpviol->getO7Vari( Top , AnTop, AnLep, Lep ) );
+                     v_recocp_O.push_back( ssbcpviol->getO8Vari( Top, AnTop, bJet , AnbJet, AnLep, Lep ) );
+                     v_recocp_O.push_back( ssbcpviol->getO9Vari( bJet , AnbJet, AnLep, Lep )  );
+                     v_recocp_O.push_back( ssbcpviol->getO10Vari( bJet , AnbJet, AnLep, Lep )  );
+                     v_recocp_O.push_back( ssbcpviol->getO11Vari( bJet , AnbJet, AnLep, Lep )  );
+                     v_recocp_O.push_back( ssbcpviol->getO12Vari( bJet , AnbJet, AnLep, Lep )  );
+                     v_recocp_O.push_back( ssbcpviol->getO13Vari( bJet , AnbJet, AnLep, Lep )  );
+
+                     NewLepAnLepMisCharge();
+                     for (int i = 0; i < v_recocp_O.size(); ++ i)
+                     {
+                        FillHisto( h_Reco_CPO_[i], v_recocp_O[i] , evt_weight_ );
+                        FillHisto( h_Reco_CPO_ReRange_[i], v_recocp_O[i] , evt_weight_ );
+                        FillHisto( h_LepAnLepEngCheck_[i], v_MisCharge[i] , evt_weight_ );
+                     }
+
+                     FillHisto( h_Top1Mass    , Top1->M()        , evt_weight_ );
+                     FillHisto( h_Top1pt      , Top1->Pt()       , evt_weight_ );
+                     FillHisto( h_Top1phi     , Top1->Phi()      , evt_weight_ );
+                     FillHisto( h_Top1Rapidity, Top1->Rapidity() , evt_weight_ );
+                     FillHisto( h_Top1Energy  , Top1->Energy()   , evt_weight_ );
+                  
+                     FillHisto( h_Top2Mass    , Top2->M()        , evt_weight_ );
+                     FillHisto( h_Top2pt      , Top2->Pt()       , evt_weight_ );
+                     FillHisto( h_Top2phi     , Top2->Phi()      , evt_weight_ );
+                     FillHisto( h_Top2Rapidity, Top2->Rapidity() , evt_weight_ );
+                     FillHisto( h_Top2Energy  , Top2->Energy()   , evt_weight_ );
+
+                  }
 
                } /// Step 5///
             } /// Step 4 ///
@@ -703,7 +846,15 @@ void ssb_analysis::GetNtupleTotalEvent( unsigned int totevent )// Not Used Funct
 
 void ssb_analysis::Start()
 {
-   fout = new TFile(Form("output/%s",outfile),"RECREATE");
+   //fout = new TFile(Form("output/%s",outfile),"RECREATE");
+   if (strcmp(outdir, "None") != 0 ) {
+      //fout = new TFile(Form("%s/%s",outdir,outfile),"RECREATE");
+      fout = new TFile(Form("gsidcap://cluster142.knu.ac.kr/%s/%s",outdir,outfile),"RECREATE");
+   }
+   else {
+      fout = new TFile(Form("output/%s",outfile),"RECREATE");
+   }
+   cout << "fout - getname : " << fout->GetName() << endl;
 //   else if      ( genLoopon == 1 ){ fout = new TFile(Form("output/%s",outfile),"UPDATE");}
    //if      ( genLoopon == 0 ){ fout = new TFile(Form("gsidcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/SSB_CPviolation/output/%s",outfile),"RECREATE");}
    //else if ( genLoopon == 1 ){ fout = new TFile(Form("gsidcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/SSB_CPviolation/output/%s",outfile),"UPDATE"  );}
@@ -843,17 +994,6 @@ void ssb_analysis::DeclareHistos()
    h_GenNuEnergy   = new TH1D(Form("h_GenNuEnergy" ), Form("Nuetrino Energy At Genrator Level"   ), 2000, 0.0, 2000); h_GenNuEnergy->Sumw2();
    h_GenAnNuEnergy = new TH1D(Form("h_GenAnNuEnergy" ), Form("anti-Nuetrino Energy At Genrator Level" ), 2000, 0.0, 2000); h_GenAnNuEnergy->Sumw2();
 
-   h_CPO3_reco         = new TH1D(Form("h_CPO3_reco"   ), Form("CPO3_reco"   ), 200, -10, 10); h_CPO3_reco->Sumw2();
-   h_CPO3_reco_JPRUp   = new TH1D(Form("h_CPO3_reco_JPRUp"     ), Form("CPO3_reco_JPRUp"     ), 200, -10, 10); h_CPO3_reco_JPRUp->Sumw2();
-   h_CPO3_reco_JPRDown = new TH1D(Form("h_CPO3_reco_JPRDown"   ), Form("CPO3_reco_JPRDown"   ), 200, -10, 10); h_CPO3_reco_JPRDown->Sumw2();
-   h_CPO3_reco_TopRes  = new TH1D(Form("h_CPO3_reco_TopRes"   ), Form("CPO3_reco in the Top Mass Window"   ), 200, -10, 10); h_CPO3_reco_TopRes->Sumw2();
-   h_CPOb_reco         = new TH1D(Form("h_CPOb_reco"   ), Form("CPOb_reco"   ), 200, -10, 10); h_CPOb_reco->Sumw2();
-   h_CPO5_reco         = new TH1D(Form("h_CPO5_reco"   ), Form("CPO5_reco"   ), 200, -10, 10); h_CPO5_reco->Sumw2();
-
-   h_CPO3_evtweight  = new TH1D(Form("h_CPO3_evtweight"   ), Form("CPO3_evtweight"   ), 10, 0, 10); h_CPO3_evtweight->Sumw2();
-   h_CPOb_evtweight  = new TH1D(Form("h_CPOb_evtweight"   ), Form("CPOb_evtweight"   ), 10, 0, 10); h_CPOb_evtweight->Sumw2();
-   h_CPO5_evtweight  = new TH1D(Form("h_CPO5_evtweight"   ), Form("CPO5_evtweight"   ), 10, 0, 10); h_CPO5_evtweight->Sumw2();
-
    h_BjorkenX1 = new TH1D(Form("h_BjorkenX1" ), Form("Bjorken X1" ), 120, -0.1  , 1.1); h_BjorkenX1->Sumw2();  
    h_BjorkenX2 = new TH1D(Form("h_BjorkenX2" ), Form("Bjorken X2" ), 120, -0.1, 1.1); h_BjorkenX2->Sumw2(); 
    h_BjorkenX3 = new TH1D(Form("h_BjorkenX3" ), Form("Bjorken X3" ), 2000, 0.0  , 2000); h_BjorkenX3->Sumw2();
@@ -959,9 +1099,11 @@ void ssb_analysis::SetInputFileName( char *inname )
    //cout << "FileName_ : " << FileName_ << endl;
    
 }
-void ssb_analysis::SetOutputFileName(char *outname)
+void ssb_analysis::SetOutputFileName(char *outname, char *sedir)
 {   
    outfile = outname;
+   outdir = sedir;
+
 }
 
 void ssb_analysis::MCSF()
@@ -1012,7 +1154,7 @@ void ssb_analysis::MCSF()
    double lumi = Lumi/1000000;
    auto it = m_sam_xsec.find(FileName_.Data());
    if (it !=  m_sam_xsec.end()){
-      cout << "Key " << FileName_.Data() << " found in the map."<< endl;
+      cout << "SK Key " << FileName_.Data() << " found in the map."<< endl;
       mc_sf_ = (m_sam_xsec[FileName_.Data()]*m_sam_br[FileName_.Data()]*lumi)/m_sam_posi_nega[FileName_.Data()];
    }
    else {
@@ -1027,8 +1169,10 @@ void ssb_analysis::MCSFApply()
 {
    evt_weight_beforemcsf_ =1; // Initailize evt_weight_beforemcsf_ //
    evt_weight_beforemcsf_ = evt_weight_; // keep event weight // 
-   if ( !TString(FileName_).Contains( "Data") ){ evt_weight_ = evt_weight_*mc_sf_; } // apply MC scale factor // 
+   if ( !TString(FileName_).Contains( "Data") ){ evt_weight_ = evt_weight_*mc_sf_; /*cout <<  "evt_weight_ : "<< evt_weight_ << " mc_sf_ : "  << mc_sf_  << endl;*/ 
+   } // apply MC scale factor // 
    else {evt_weight_ = 1;}
+   //cout << "SK MC SF : " << evt_weight_<<endl;
 }
 void ssb_analysis::GenWeightApply()
 {
@@ -1352,12 +1496,17 @@ bool ssb_analysis::Trigger()
             //cout << "veto !! " << endl;
             ispassvetoTrig_ = SelTrigger(vetotrigName);
             //cout << "ispassvetoTrig_ : " << ispassvetoTrig_ << endl;
+            trigpass = ispassselTrig_;
          }
          else if( TString(FileName_).Contains( "Double") || TString(FileName_).Contains( "MuonEG")) {
+            //cout << "SK : FileName_ "  << endl;
             seltrigName = DLtrigName;
             vetotrigName = SLtrigName;
-            ispassselTrig_ = SelTrigger(seltrigName);
-            ispassvetoTrig_ = SelTrigger(vetotrigName);
+            //cout << "SK : seltrigName:" << seltrigName  << endl;
+            //cout << "SK : vetotrigName:" << vetotrigName  << endl;
+            ispassselTrig_ = SelTrigger(trigName);
+            //ispassvetoTrig_ = SelTrigger(vetotrigName);
+            trigpass = ispassselTrig_;
          }
          else { cout << "Check out FileName_ in Trigger ()" << endl;}
 
@@ -1365,7 +1514,7 @@ bool ssb_analysis::Trigger()
 
       if (ispassvetoTrig_ == true) {trigpass = false;}
    }
-   //cout << "trigger : " << trigpass << endl; 
+   //cout << "ispassselTrig_ : " << ispassselTrig_ << " ispassvetoTrig_ : " << ispassvetoTrig_ << "trigger : " << trigpass << endl; 
    return trigpass;
 }
 // Function of Muon Rocheser Correction //

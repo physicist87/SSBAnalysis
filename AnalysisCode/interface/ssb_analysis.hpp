@@ -54,7 +54,7 @@ class ssb_analysis : public SSBTree
 
       //user define functions
       void SetInputFileName( char *inname );
-      void SetOutputFileName(char *outname);
+      void SetOutputFileName(char *outname, char *sedir);
       void DeclareHistos();
       void DeclareHistosSyst(int index_);
       void SetConfig();
@@ -210,6 +210,7 @@ class ssb_analysis : public SSBTree
    private:
       //put variables that you want
       char *outfile;
+      char *outdir;
       TFile *fout;
       TFile *a_fout[60]; // for systematics 
       std::vector<TString>v_outName;
