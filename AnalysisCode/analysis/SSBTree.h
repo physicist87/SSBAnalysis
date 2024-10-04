@@ -34,7 +34,8 @@ public :
    Int_t           Info_EventNumber;
    Int_t           Info_Luminosity;
    Int_t           Info_RunNumber;
-   Char_t          Info_isData;
+   //Char_t          Info_isData;
+   Bool_t          Info_isData;
    Int_t           Channel_Idx;
    Int_t           Channel_Idx_Final;
    Int_t           Channel_Lepton_Count;
