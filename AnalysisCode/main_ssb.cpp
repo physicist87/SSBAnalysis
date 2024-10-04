@@ -39,6 +39,7 @@ int main(int argc, char **argv)
       printf("1. Input filelist\n");
       printf("2. Output file\n");
       printf("3. Config file name\n");
+      printf("4. SE directory output name\n");
 /*      printf("4. Muon Candidate Eta Cut On or Off\n");
       printf("5. Muon Candidate Eta Cut \n");
       printf("6. Charge Opposite Sign On or Off\n");
@@ -65,6 +66,8 @@ int main(int argc, char **argv)
    char *confname = argv[3];
    printf("Config file name = %s\n",confname);
 
+   char *sedriname = argv[4];
+   printf("SE Dir name = %s\n",sedriname);
 //   char *logfile = argv[4];
 //   printf("Output Log File Name = %s.txt\n",logfile);
 /*   Bool_t trigger_pass_on =false;
@@ -94,16 +97,18 @@ int main(int argc, char **argv)
    std::vector<double> entries_pertree;
 
    entries_pertree.clear();
-
+   if (filelist==NULL) {cout << "inputfile list is not valid... End process..." << endl; return 0;}
+/*
    while(filelist==NULL)
    {
       cout << "File not found, please try again." << endl;
       cout << "Filelist you want to use: " << filelistDir;
+      
       cin >> filelistName;      
       filelistPath = filelistDir + filelistName;
       filelist=fopen(filelistPath.c_str(),"r");
    }
-
+*/
 //   TChain *chgen = new TChain("demo/SSBGenTree");
    TChain *ch    = new TChain("ssbanalyzer/SSBTree"   );
    //TChain *ch    = new TChain("ssbanalyzer/SSBMiniTree"   );
@@ -123,7 +128,7 @@ int main(int argc, char **argv)
 
    ssb_analysis *ssb = new ssb_analysis(ch, confname);
    ssb->SetInputFileName(flist);
-   ssb->SetOutputFileName(outname);
+   ssb->SetOutputFileName(outname, sedriname);
 //   ssb->SetConfigFile(flist);
    ssb->GetNtupleTotalEvent( ch->GetEntries() );
    ssb->Start();
